@@ -414,15 +414,15 @@ object PageMenuHook : BaseHook() {
           val itemConstuctor = MVCListAdapter_ListItem.declaredConstructors[0]
           if (isChromeXtFrontEnd(url)) {
             menusToAdd.add(
-                itemConstuctor.newInstance(AppMenuItemType.STANDARD.value, localMenus[0]))
+                itemConstuctor.newInstance(localMenus[0], AppMenuItemType.STANDARD.value))
             menusToAdd.add(
-                itemConstuctor.newInstance(AppMenuItemType.STANDARD.value, localMenus[1]))
+                itemConstuctor.newInstance(localMenus[1], AppMenuItemType.STANDARD.value))
           } else if (isUserScript(url)) {
             menusToAdd.add(
-                itemConstuctor.newInstance(AppMenuItemType.STANDARD.value, localMenus[2]))
+                itemConstuctor.newInstance(localMenus[2], AppMenuItemType.STANDARD.value))
           } else {
             menusToAdd.add(
-                itemConstuctor.newInstance(AppMenuItemType.STANDARD.value, localMenus[3]))
+                itemConstuctor.newInstance(localMenus[3], AppMenuItemType.STANDARD.value))
           }
 
           val injectPosition =
