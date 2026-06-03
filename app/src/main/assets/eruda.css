@@ -162,12 +162,20 @@ h2.eruda-title {
 #eruda-resources div.eruda-commands {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-around;
+  justify-content: flex-start;
   .eruda-command,
   .eruda-script {
     padding: 0.3em;
     margin: 0.3em;
     border: 0.5px solid violet;
+  }
+  .eruda-command-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+  .eruda-command-group {
+    padding: 10px;
   }
 }
 #eruda-resources .eruda-filter-item {

@@ -337,7 +337,9 @@ eruda.Resources = class extends eruda.Resources {
           .join("")
         return `<div class="${c("command-group")}">` +
                   `<h3 class="${c("title")}">${entry[0].split(':').at(-1)}</h3>` +
+                  `<div class="${c("command-list")}">` +
                   `${cmds}` +
+                  `</div>` +
                 `</div>`;
       })
       .toArray()
