@@ -55,11 +55,11 @@ object UserScriptProxy {
               val profile = Chrome.load("org.chromium.chrome.browser.profiles.Profile")
               val windowAndroid = Chrome.load("org.chromium.ui.base.WindowAndroid")
               var startIndex = indexOfFirst { it.type == gURL }
-              val endIndex = indexOfFirst {
-                it.type == profile ||
-                    it.type == ContextThemeWrapper::class.java ||
-                    it.type == windowAndroid
-              }
+              val endIndex = maxOf(
+                indexOfFirst { it.type == profile },
+                indexOfFirst { it.type == ContextThemeWrapper::class.java },
+                indexOfFirst { it.type == windowAndroid }
+              )
               if (startIndex == -1 || startIndex > endIndex) startIndex = 0
               slice(startIndex..endIndex - 1).findLast { it.type == Int::class.java }!!
             } else target
