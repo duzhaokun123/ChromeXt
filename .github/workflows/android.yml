@@ -30,11 +30,6 @@ jobs:
     - name: Rename debug build
       run: mv app/build/outputs/apk/debug/app-debug.apk app/build/ChromeXt_debug.apk
 
-    - name: Rename signed apk
-      if: ${{ ( github.event_name != 'pull_request' && github.ref == 'refs/heads/master' ) || github.ref_type == 'tag' }}
-      run: mv app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/ChromeXt.apk
-
-
     - uses: noriban/sign-android-release@master
       if: ${{ ( github.event_name != 'pull_request' && github.ref == 'refs/heads/master' ) || github.ref_type == 'tag' }}
       name: Sign app APK
@@ -49,15 +44,19 @@ jobs:
     - name: Upload debug build
       uses: actions/upload-artifact@main
       with:
-        name: ChromeXt_debug.apk
+        archive: false
         path: app/build/ChromeXt_debug.apk
+
+    - name: Rename signed apk
+      if: ${{ ( github.event_name != 'pull_request' && github.ref == 'refs/heads/master' ) || github.ref_type == 'tag' }}
+      run: mv ${{steps.sign_app.outputs.signedReleaseFile}} app/build/ChromeXt_signed.apk
 
     - name: Upload signed APK
       if: ${{ ( github.event_name != 'pull_request' && github.ref == 'refs/heads/master' ) || github.ref_type == 'tag' }}
       uses: actions/upload-artifact@main
       with:
-        name: ChromeXt_signed.apk
-        path: ${{steps.sign_app.outputs.signedReleaseFile}}
+        archive: false
+        path: app/build/ChromeXt_signed.apk
 
     - name: Collect debug build
       uses: actions/download-artifact@main
