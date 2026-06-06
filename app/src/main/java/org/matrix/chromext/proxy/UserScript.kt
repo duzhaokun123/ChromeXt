@@ -1,7 +1,6 @@
 package org.matrix.chromext.proxy
 
 import android.net.Uri
-import android.view.ContextThemeWrapper
 import java.lang.reflect.Modifier
 import org.matrix.chromext.Chrome
 import org.matrix.chromext.script.ScriptDbManager
@@ -45,26 +44,7 @@ object UserScriptProxy {
       } else {
         Chrome.load("org.chromium.chrome.browser.tab.TabImpl")
       }
-  private val getId = findMethodOrNull(tabImpl) { name == "getId" }
-  private val mId =
-      (if (Chrome.isSamsung) tabWebContentsDelegateAndroidImpl else tabImpl)
-          .declaredFields
-          .run {
-            val target = find { it.name == "mId" }
-            if (target == null) {
-              val profile = Chrome.load("org.chromium.chrome.browser.profiles.Profile")
-              val windowAndroid = Chrome.load("org.chromium.ui.base.WindowAndroid")
-              var startIndex = indexOfFirst { it.type == gURL }
-              val endIndex = maxOf(
-                indexOfFirst { it.type == profile },
-                indexOfFirst { it.type == ContextThemeWrapper::class.java },
-                indexOfFirst { it.type == windowAndroid }
-              )
-              if (startIndex == -1 || startIndex > endIndex) startIndex = 0
-              slice(startIndex..endIndex - 1).findLast { it.type == Int::class.java }!!
-            } else target
-          }
-          .also { it.isAccessible = true }
+  private val getId = findMethod(tabImpl) { name == "getId" }
   val mTab = findField(tabWebContentsDelegateAndroidImpl) { type == tabImpl }
   val mIsLoading =
       tabImpl.declaredFields
@@ -99,8 +79,7 @@ object UserScriptProxy {
   }
 
   fun getTabId(tab: Any): String {
-    val id = if (getId != null) getId.invoke(tab)!! else mId.get(tab)!!
-    return id.toString()
+    return getId(tab)!!.toString()
   }
 
   fun newLoadUrlParams(url: String): Any {
