@@ -987,7 +987,7 @@ class ResponseSink {
     } else {
       this.xhr.response += chunk;
     }
-    this.xhr.loaded += data.bytes || chunk.length;
+    this.xhr.loaded += typeof data.bytes == "number" ? data.bytes : chunk.length;
     this.dispatch("progress");
   }
   async close(_controller) {
