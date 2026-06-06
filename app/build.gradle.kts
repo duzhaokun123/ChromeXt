@@ -41,7 +41,8 @@ android {
             "UnsafeIntentLaunch",
             "SetJavaScriptEnabled",
             "UnspecifiedRegisterReceiverFlag",
-            "Usability:Icons")
+            "Usability:Icons",
+        )
   }
 }
 

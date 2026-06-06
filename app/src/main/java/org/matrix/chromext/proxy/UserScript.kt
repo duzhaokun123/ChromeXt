@@ -1,7 +1,7 @@
 package org.matrix.chromext.proxy
 
 import android.net.Uri
-import java.lang.reflect.Modifier
+import org.luckypray.dexkit.annotations.DexKitExperimentalApi
 import org.matrix.chromext.Chrome
 import org.matrix.chromext.script.ScriptDbManager
 import org.matrix.chromext.utils.Log
@@ -46,24 +46,29 @@ object UserScriptProxy {
       }
   private val getId = findMethod(tabImpl) { name == "getId" }
   val mTab = findField(tabWebContentsDelegateAndroidImpl) { type == tabImpl }
-  val mIsLoading =
-      tabImpl.declaredFields
-          .run {
-            // mIsLoading is used in method stopLoading, before calling
-            // Lorg/chromium/content_public/browser/WebContents;->stop()V
-            val target = find { it.name == "mIsLoading" }
-            if (target == null) {
-              val webContents = Chrome.load("org.chromium.content_public.browser.WebContents")
-              val startIndex =
-                  maxOf(
-                      indexOfFirst { it.type == webContents },
-                      indexOfFirst { it.type == loadUrlParams })
-              slice(startIndex..size - 1).find {
-                it.type == Boolean::class.java && !Modifier.isStatic(it.modifiers)
-              }!!
-            } else target
-          }
-          .also { it.isAccessible = true }
+
+  /**
+   * mIsLoading is used in method stopLoading, before calling
+   * Lorg/chromium/content_public/browser/WebContents;->stop()V
+   */
+  @OptIn(DexKitExperimentalApi::class)
+  val mIsLoading = Chrome.dexKitBridge.getFieldDirect("TabImpl.mIsLoading") { dexKitBridge ->
+    val stopLoading = dexKitBridge.findMethod {
+      matcher {
+        declaredClass(tabImpl)
+        addInvoke("Lorg/chromium/content_public/browser/WebContents;->stop()V")
+      }
+    }.single()
+    dexKitBridge.findField {
+      matcher {
+        declaredClass(tabImpl)
+        type(Boolean::class.javaPrimitiveType!!)
+        addReadMethod(stopLoading.descriptor)
+      }
+    }.single()
+  }.getFieldInstance(Chrome.getContext().classLoader)
+    .also { it.isAccessible = true }
+
   val getUrl = findMethodOrNull(tabImpl) { returnType == gURL }
   val loadUrl =
       findMethod(if (Chrome.isSamsung) tabWebContentsDelegateAndroidImpl else tabImpl) {
