@@ -9,7 +9,7 @@ android {
 
   defaultConfig {
     applicationId = "org.matrix.chromext"
-    minSdk = 21
+    minSdk = 23
     targetSdk = 35
     versionCode = 16
     versionName = "3.8.3"
@@ -45,4 +45,7 @@ android {
   }
 }
 
-dependencies { compileOnly("de.robv.android.xposed:api:82") }
+dependencies {
+  compileOnly("de.robv.android.xposed:api:82")
+  implementation("org.luckypray:dexkit:2.2.0")
+}

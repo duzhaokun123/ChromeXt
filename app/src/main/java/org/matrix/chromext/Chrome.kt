@@ -16,6 +16,8 @@ import java.net.HttpCookie
 import java.util.concurrent.Executors
 import org.json.JSONArray
 import org.json.JSONObject
+import org.luckypray.dexkit.DexKitCacheBridge
+import org.luckypray.dexkit.annotations.DexKitExperimentalApi
 import org.matrix.chromext.devtools.DevSessions
 import org.matrix.chromext.devtools.getInspectPages
 import org.matrix.chromext.devtools.hitDevTools
@@ -45,11 +47,14 @@ object Chrome {
   var isVivaldi = false
   var isCocCoc = false
 
-  var version: String? = null
-  var packageName: String? = null
+  lateinit var version: String
+  lateinit var packageName: String
 
   val IO = Executors.newCachedThreadPool()
   val cookieStore = CookieManager().getCookieStore()
+  @OptIn(DexKitExperimentalApi::class)
+  val dexKitBridge: DexKitCacheBridge.RecyclableBridge
+    get() = DexKitCacheBridge.create("$packageName:$version:${BuildConfig.VERSION_CODE}", getContext().applicationContext.classLoader)
 
   fun init(ctx: Context, packageName: String? = null) {
     val initialized = mContext != null
@@ -67,13 +72,15 @@ object Chrome {
     isQihoo = packageName == "com.qihoo.contents"
     isSamsung = packageName.startsWith("com.sec.android.app.sbrowser")
     isVivaldi = packageName == "com.vivaldi.browser"
-    @Suppress("DEPRECATION") val packageInfo = ctx.packageManager?.getPackageInfo(packageName, 0)
-    version = packageInfo?.versionName
-    version = (if (version?.startsWith("v") == true) "" else "v") + version
-    Log.i("Package: ${packageName}, ${version}")
+    @Suppress("DEPRECATION")
+    val packageInfo = ctx.packageManager.getPackageInfo(packageName, 0)
+    version = packageInfo.versionName ?: "null"
+    version = (if (version.startsWith("v")) "" else "v") + version
+    Log.i("Package: $packageName, $version")
 
     setupHttpCache(ctx)
     saveRedirectCookie()
+    setupDexKit()
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       val groupId = "org.matrix.chromext"
       val group = NotificationChannelGroup(groupId, "ChromeXt")
@@ -131,6 +138,26 @@ object Chrome {
             request.response("redirect", data, false)
           }
         }
+  }
+
+  @OptIn(DexKitExperimentalApi::class)
+  private fun setupDexKit() {
+    System.loadLibrary("dexkit")
+    DexKitCacheBridge.idleTimeoutMillis = 5_000
+    DexKitCacheBridge.cachePolicy = DexKitCacheBridge.CachePolicy(
+      cacheSuccess = true,
+      failurePolicy = DexKitCacheBridge.CacheFailurePolicy.ALL
+    )
+    DexKitCacheBridge.init(MemoryCache)
+    DexKitCacheBridge.addListener(object : DexKitCacheBridge.CacheBridgeListener() {
+      override fun onBridgeCreated(appTag: String) {
+        Log.d("created bridge: $appTag")
+      }
+
+      override fun onBridgeReleased(appTag: String) {
+        Log.d("released bridge: $appTag")
+      }
+    })
   }
 
   fun storeCoookies(
