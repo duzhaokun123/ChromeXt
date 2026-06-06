@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   IS_RELEASE_BUILD: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || github.ref_type == 'tag') }}
@@ -30,6 +30,8 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
+        with:
+          dependency-graph: ${{ env.IS_RELEASE_BUILD && 'generate-and-submit' || 'disabled' }}
 
       - name: Build debug APK
         run: ./gradlew app:assembleDebug
