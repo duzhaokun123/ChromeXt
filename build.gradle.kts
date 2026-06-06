@@ -2,7 +2,6 @@ import com.ncorti.ktfmt.gradle.tasks.KtfmtFormatTask
 
 plugins {
   id("com.android.application") version "9.2.1" apply false
-  id("org.jetbrains.kotlin.android") version "2.4.0" apply false
   id("com.ncorti.ktfmt.gradle") version "0.26.0"
 }
 
