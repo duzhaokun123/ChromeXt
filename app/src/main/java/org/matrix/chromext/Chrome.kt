@@ -54,7 +54,7 @@ object Chrome {
   val cookieStore = CookieManager().getCookieStore()
   @OptIn(DexKitExperimentalApi::class)
   val dexKitBridge: DexKitCacheBridge.RecyclableBridge
-    get() = DexKitCacheBridge.create("$packageName:$version:${BuildConfig.VERSION_CODE}", getContext().applicationContext.classLoader)
+    get() = DexKitCacheBridge.create("$packageName:$version:${BuildConfig.BUILD_TIME}", getContext().applicationContext.classLoader)
 
   fun init(ctx: Context, packageName: String? = null) {
     val initialized = mContext != null
@@ -148,7 +148,7 @@ object Chrome {
       cacheSuccess = true,
       failurePolicy = DexKitCacheBridge.CacheFailurePolicy.ALL
     )
-    DexKitCacheBridge.init(MemoryCache)
+    DexKitCacheBridge.init(JsonCache(getContext().cacheDir.resolve("dexkit.json")))
     DexKitCacheBridge.addListener(object : DexKitCacheBridge.CacheBridgeListener() {
       override fun onBridgeCreated(appTag: String) {
         Log.d("created bridge: $appTag")

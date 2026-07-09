@@ -13,6 +13,8 @@ android {
     targetSdk = 35
     versionCode = 16
     versionName = "3.8.3"
+
+    buildConfigField("long", "BUILD_TIME", "${System.currentTimeMillis()}L")
   }
 
   buildFeatures { buildConfig = true }
