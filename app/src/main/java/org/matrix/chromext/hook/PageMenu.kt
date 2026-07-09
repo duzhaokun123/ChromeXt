@@ -131,7 +131,7 @@ object PageMenuHook : BaseHook() {
 
     findMethod(proxy.chromeTabbedActivity) {
           // public boolean onMenuOrKeyboardAction(int id, boolean fromMenu, ? triggeringMotion)
-          (parameterCount == 2 || parameterCount == 3) &&
+          (parameterCount >= 2) &&
               parameterTypes[0] == Int::class.java &&
               parameterTypes[1] == Boolean::class.java &&
               returnType == Boolean::class.java
@@ -144,7 +144,7 @@ object PageMenuHook : BaseHook() {
 
     findMethod(proxy.customTabActivity) {
           // public boolean onMenuOrKeyboardAction(int id, boolean fromMenu, ? triggeringMotion)
-          (parameterCount == 2 || parameterCount == 3) &&
+          (parameterCount >= 2) &&
               parameterTypes[0] == Int::class.java &&
               parameterTypes[1] == Boolean::class.java &&
               returnType == Boolean::class.java
@@ -340,7 +340,7 @@ object PageMenuHook : BaseHook() {
     val mType = findField(MVCListAdapter_ListItem) { type == Int::class.java }
     // the original field name was "type"
 
-    val mData = findField(proxy.propertyModel) { type == Map::class.java }
+    val mData = findField(proxy.propertyModel) { type == HashMap::class.java }
 
     return findMethod(tabbedAppMenuPropertiesDelegate) {
           parameterTypes.size == 0 && returnType == MVCListAdapter_ModelList
