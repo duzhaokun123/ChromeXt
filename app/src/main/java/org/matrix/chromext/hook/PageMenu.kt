@@ -26,32 +26,32 @@ enum class AppMenuItemType(val value: Int) {
   /** Regular Android menu item that contains a title and an icon if icon is specified. */
   STANDARD(0),
 
-  /**
-   * Menu item that has two buttons, the first one is a title and the second one is an icon. It is
-   * different from the regular menu item because it contains two separate buttons.
-   */
-  TITLE_BUTTON(1),
+//  /**
+//   * Menu item that has two buttons, the first one is a title and the second one is an icon. It is
+//   * different from the regular menu item because it contains two separate buttons.
+//   */
+//  TITLE_BUTTON(1),
 
-  /**
-   * Menu item that has multiple buttons (no more than 5). Every one of these buttons is displayed
-   * as an icon.
-   */
-  BUTTON_ROW(2),
+//  /**
+//   * Menu item that has multiple buttons (no more than 5). Every one of these buttons is displayed
+//   * as an icon.
+//   */
+//  BUTTON_ROW(2),
 
-  /** Menu item that when contains submenus. */
-  MENU_ITEM_WITH_SUBMENU(3),
+//  /** Menu item that when contains submenus. */
+//  MENU_ITEM_WITH_SUBMENU(3),
 
-  /** The header for submenus when submenus are displayed in drilldown. */
-  SUBMENU_HEADER(4),
+//  /** The header for submenus when submenus are displayed in drilldown. */
+//  SUBMENU_HEADER(4),
 
   /** A divider item to distinguish between menu item groupings. */
-  DIVIDER(5),
+  DIVIDER(7),
 
-  /**
-   * The number of menu item types specified above. If you add a menu item type you MUST increment
-   * this.
-   */
-  NUM_ENTRIES(6)
+//  /**
+//   * The number of menu item types specified above. If you add a menu item type you MUST increment
+//   * this.
+//   */
+//  NUM_ENTRIES(6)
 }
 
 enum class EntryPoint(val value: Int) {
