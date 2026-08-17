@@ -30,19 +30,19 @@ enum class AppMenuItemType(val value: Int) {
 //   * Menu item that has two buttons, the first one is a title and the second one is an icon. It is
 //   * different from the regular menu item because it contains two separate buttons.
 //   */
-//  TITLE_BUTTON(1),
+//  TITLE_BUTTON(?),
 
 //  /**
 //   * Menu item that has multiple buttons (no more than 5). Every one of these buttons is displayed
 //   * as an icon.
 //   */
-//  BUTTON_ROW(2),
+//  BUTTON_ROW(?),
 
 //  /** Menu item that when contains submenus. */
-//  MENU_ITEM_WITH_SUBMENU(3),
+//  MENU_ITEM_WITH_SUBMENU(?),
 
 //  /** The header for submenus when submenus are displayed in drilldown. */
-//  SUBMENU_HEADER(4),
+//  SUBMENU_HEADER(?),
 
   /** A divider item to distinguish between menu item groupings. */
   DIVIDER(7),
@@ -51,7 +51,7 @@ enum class AppMenuItemType(val value: Int) {
 //   * The number of menu item types specified above. If you add a menu item type you MUST increment
 //   * this.
 //   */
-//  NUM_ENTRIES(6)
+//  NUM_ENTRIES(?)
 }
 
 enum class EntryPoint(val value: Int) {
