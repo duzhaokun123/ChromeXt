@@ -4,3 +4,5 @@
 apktool
 *.apk
 /.idea
+/.opencode
+/.ai

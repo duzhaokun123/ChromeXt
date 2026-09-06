@@ -309,16 +309,24 @@ object PageMenuHook : BaseHook() {
         }
     // private void maybeAddDividerLine(MVCListAdapter.ModelList modelList, @IdRes int id)
 
-    val buildModelForStandardMenuItem =
-        findMethod(appMenuPropertiesDelegateImpl) {
-          parameterTypes contentDeepEquals
-              arrayOf(Int::class.java, Int::class.java, Int::class.java) &&
-              returnType == proxy.propertyModel
-        }
-    // public PropertyModel buildModelForStandardMenuItem(
-    // @IdRes int id, @StringRes int titleId, @DrawableRes int iconResId)
+    val buildModelForStandardMenuItem = PageMenuProxy.method_AppMenuItemUtils_buildModelForStandardMenuItem
+    //  org.chromium.chrome.browser.app.appmenu.AppMenuItemTheme
+    val class_AppMenuItemTheme = buildModelForStandardMenuItem.parameterTypes[1]
+    //  org.chromium.chrome.browser.app.appmenu.AppMenuPropertiesDelegateImpl.mAppMenuItemTheme
+    val field_AppMenuPropertiesDelegateImpl_mAppMenuItemTheme =
+      appMenuPropertiesDelegateImpl.declaredFields.find { it.type == class_AppMenuItemTheme }!!
+    //  org.chromium.chrome.browser.app.appmenu.AppMenuPropertiesDelegateImpl.mContext
+    val field_AppMenuPropertiesDelegateImpl_mContext =
+      appMenuPropertiesDelegateImpl.declaredFields.find { it.type == Context::class.java }!!
 
-    val MVCListAdapter_ModelList = maybeAddDividerLine!!.parameterTypes.first()
+    val MVCListAdapter_ModelList =
+      PageMenuProxy.method_AppMenuItemUtils_buildModelForStandardMenuItem
+        .declaringClass
+        .declaredMethods
+        .find {
+          it.returnType == Void.TYPE && it.parameterCount == 2 && it.parameterTypes[0] != List::class.java
+        }!!.parameterTypes[0]
+
     val mItems = findField(MVCListAdapter_ModelList, true) { type == ArrayList::class.java }
 
     val excludedReturnValuesForModelItem =
@@ -386,28 +394,43 @@ object PageMenuHook : BaseHook() {
           val skip = menuModels.size <= 10 || isChromeScheme(url)
           if (skip && !isUserScript(url)) return@hookAfter
 
+          val mContext = field_AppMenuPropertiesDelegateImpl_mContext.get(it.thisObject)
+          val mAppMenuItemTheme = field_AppMenuPropertiesDelegateImpl_mAppMenuItemTheme.get(it.thisObject)
+
           val localMenus =
               listOf(
                   buildModelForStandardMenuItem.invoke(
                       it.thisObject,
+                      mContext,
+                      mAppMenuItemTheme,
                       R.id.developer_tools_id,
                       R.string.main_menu_developer_tools,
-                      R.drawable.ic_devtools),
+                      R.drawable.ic_devtools,
+                      false),
                   buildModelForStandardMenuItem.invoke(
                       it.thisObject,
+                      mContext,
+                      mAppMenuItemTheme,
                       R.id.extension_id,
                       R.string.main_menu_extension,
-                      R.drawable.ic_extension),
+                      R.drawable.ic_extension,
+                      false),
                   buildModelForStandardMenuItem.invoke(
                       it.thisObject,
+                      mContext,
+                      mAppMenuItemTheme,
                       R.id.install_script_id,
                       R.string.main_menu_install_script,
-                      R.drawable.ic_install_script),
+                      R.drawable.ic_install_script,
+                      false),
                   buildModelForStandardMenuItem.invoke(
                       it.thisObject,
+                      mContext,
+                      mAppMenuItemTheme,
                       R.id.eruda_console_id,
                       R.string.main_menu_eruda_console,
-                      R.drawable.ic_devtools))
+                      R.drawable.ic_devtools,
+                      false))
 
           val menusToAdd = mutableListOf<Any>()
 
