@@ -8,9 +8,7 @@ import java.io.OutputStream
 import java.security.SecureRandom
 import kotlin.experimental.xor
 import org.json.JSONObject
-import org.matrix.chromext.Chrome
 import org.matrix.chromext.hook.UserScriptHook
-import org.matrix.chromext.hook.WebViewHook
 import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.randomString
 
@@ -219,16 +217,8 @@ class WebSocketFrame(msg: String?, opcode: Int = 0x1) {
 fun connectDevTools(client: LocalSocket) {
   val address =
       if (UserScriptHook.isInit) {
-        if (Chrome.isSamsung) {
-          "Terrace_devtools_remote"
-        } else {
-          "chrome_devtools_remote"
-        }
-      } else if (Chrome.isMi) {
-        "miui_webview_devtools_remote"
-      } else if (WebViewHook.isInit) {
-        "webview_devtools_remote"
-      } else {
+        "chrome_devtools_remote"
+      } else run {
         throw Exception("DevTools started unexpectedly")
       }
 

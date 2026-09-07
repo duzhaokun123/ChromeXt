@@ -7,8 +7,6 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
-import android.widget.ImageButton
-import android.widget.LinearLayout
 import de.robv.android.xposed.XC_MethodHook.Unhook
 import java.lang.reflect.Modifier
 import java.util.ArrayList
@@ -190,27 +188,6 @@ object PageMenuHook : BaseHook() {
     val mActivityTabProvider =
         findField(appMenuPropertiesDelegateImpl, true) { type == parameters[1] }
 
-    if (Chrome.isBrave) {
-      // Brave browser replaces the first row menu with class AppMenuIconRowFooter,
-      // and it customize the menu by onFooterViewInflated() function in
-      // https://github.com/brave/brave-core/blob/master/android/java/
-      // org/chromium/chrome/browser/appmenu/BraveTabbedAppMenuPropertiesDelegate.java
-      findMethod(tabbedAppMenuPropertiesDelegate, true) {
-            parameterTypes.size == 2 && getParameterTypes()[1] == View::class.java
-          }
-          // public void onFooterViewInflated(AppMenuHandler appMenuHandler, View view)
-          .hookAfter {
-            val appMenuIconRowFooter = it.args[1] as LinearLayout
-            val bookmarkButton =
-                (appMenuIconRowFooter.getChildAt(1) as LinearLayout).getChildAt(1) as ImageButton
-            bookmarkButton.setVisibility(View.VISIBLE)
-            val ctx = mContext.get(it.thisObject) as Context
-            Resource.enrich(ctx)
-            bookmarkButton.setImageResource(R.drawable.ic_book)
-            bookmarkButton.setId(readerMode.ID)
-          }
-    }
-
     val prepareMenu =
         findMethodOrNull(appMenuPropertiesDelegateImpl, true) {
           parameterTypes.size == 2 &&
@@ -232,7 +209,7 @@ object PageMenuHook : BaseHook() {
           val url = getUrl()
 
           val iconRowMenu = menu.getItem(0)
-          if (iconRowMenu.hasSubMenu() && !Chrome.isBrave) {
+          if (iconRowMenu.hasSubMenu()) {
             val infoMenu = iconRowMenu.getSubMenu()!!.getItem(3)
             infoMenu.setIcon(R.drawable.ic_book)
             infoMenu.setEnabled(true)
@@ -274,8 +251,7 @@ object PageMenuHook : BaseHook() {
             toShow.addAll(listOf(3, 4))
           }
 
-          if (!Chrome.isVivaldi &&
-              ctx.resources.configuration.smallestScreenWidthDp >= DisplayMetrics.DENSITY_XXHIGH &&
+          if (ctx.resources.configuration.smallestScreenWidthDp >= DisplayMetrics.DENSITY_XXHIGH &&
               toShow.size == 1 &&
               toShow.first() == 1) {
             iconRowMenu.setVisible(true)
@@ -374,7 +350,7 @@ object PageMenuHook : BaseHook() {
                     val _value = it.value!!::class.java.declaredFields[0]
                     _value.get(it.value)
                   }
-          if (additionalIcons != null && !Chrome.isBrave) {
+          if (additionalIcons != null) {
             @Suppress("UNCHECKED_CAST") val icons = mItems.get(additionalIcons) as ArrayList<Any>
             @Suppress("UNCHECKED_CAST")
             val pageInfoModel = mData.get(model.get(icons[3])) as Map<Any, Any?>

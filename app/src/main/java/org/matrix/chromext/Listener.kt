@@ -14,7 +14,6 @@ import android.graphics.BitmapFactory
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Handler
-import android.webkit.WebView
 import java.io.File
 import java.io.FileReader
 import java.net.HttpURLConnection
@@ -27,7 +26,6 @@ import org.matrix.chromext.devtools.getInspectPages
 import org.matrix.chromext.devtools.hitDevTools
 import org.matrix.chromext.extension.LocalFiles
 import org.matrix.chromext.hook.UserScriptHook
-import org.matrix.chromext.hook.WebViewHook
 import org.matrix.chromext.proxy.UserScriptProxy
 import org.matrix.chromext.script.Local
 import org.matrix.chromext.script.ScriptDbHelper
@@ -38,7 +36,6 @@ import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.XMLHttpRequest
 import org.matrix.chromext.utils.findMethod
 import org.matrix.chromext.utils.invalidUserScriptUrls
-import org.matrix.chromext.utils.invokeMethod
 import org.matrix.chromext.utils.isChromeXtFrontEnd
 import org.matrix.chromext.utils.isDevToolsFrontEnd
 import org.matrix.chromext.utils.isUserScript
@@ -156,19 +153,7 @@ object Listener {
       }
       "close" -> {
         val activity = Chrome.getContext()
-        if (WebViewHook.isInit && currentTab != null && auxObject != null) {
-          auxObject.invokeMethod(currentTab) { name == "onCloseWindow" }
-        } else if (Chrome.isSamsung &&
-            currentTab != null &&
-            activity::class.java ==
-                Chrome.load("com.sec.android.app.sbrowser.SBrowserMainActivity")) {
-          val manager = activity.invokeMethod { name == "getTabManager" }!!
-          @Suppress("UNCHECKED_CAST")
-          val tabList = manager.invokeMethod { name == "getAllTabList" } as List<Any>
-          tabList
-              .find { it.invokeMethod { name == "getTab" } == currentTab }
-              ?.also { manager.invokeMethod(it) { name == "closeTab" } }
-        } else if (currentTab != null &&
+        if (currentTab != null &&
             activity::class.java == UserScriptProxy.chromeTabbedActivity) {
           val tab = Chrome.load("org.chromium.chrome.browser.tab.Tab")
           val tabModel = Chrome.load("org.chromium.chrome.browser.tabmodel.TabModel")
@@ -309,7 +294,6 @@ object Listener {
         }
       }
       "cookie" -> {
-        if (WebViewHook.isInit) WebView.setWebContentsDebuggingEnabled(true)
         val detail = JSONObject(payload)
         val method = detail.getString("method")
         val params = detail.optJSONObject("params")
@@ -395,7 +379,6 @@ object Listener {
             }
       }
       "inspectPages" -> {
-        if (WebViewHook.isInit) WebView.setWebContentsDebuggingEnabled(true)
         Chrome.IO.submit {
           val code = "ChromeXt.post('inspect_pages', ${getInspectPages()});"
           Handler(Chrome.getContext().mainLooper).post {

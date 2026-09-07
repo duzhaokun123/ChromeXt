@@ -2,30 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 	<queries>
 		<package android:name="com.android.chrome"/>
-		<package android:name="com.brave.browser"/>
-		<package android:name="com.brave.browser_beta"/>
-		<package android:name="com.brave.browser_nightly"/>
-		<package android:name="com.chrome.beta"/>
-		<package android:name="com.chrome.canary"/>
-		<package android:name="com.chrome.dev"/>
-		<package android:name="com.coccoc.trinhduyet"/>
-		<package android:name="com.coccoc.trinhduyet_beta"/>
-		<package android:name="com.kiwibrowser.browser"/>
-		<package android:name="com.microsoft.emmx"/>
-		<package android:name="com.microsoft.emmx.beta"/>
-		<package android:name="com.microsoft.emmx.canary"/>
-		<package android:name="com.microsoft.emmx.dev"/>
-		<package android:name="com.naver.whale"/>
-		<package android:name="com.sec.android.app.sbrowser"/>
-		<package android:name="com.sec.android.app.sbrowser.beta"/>
-		<package android:name="com.vivaldi.browser"/>
-		<package android:name="com.vivaldi.browser.snapshot"/>
-		<package android:name="org.bromite.bromite"/>
-		<package android:name="org.chromium.thorium"/>
-		<package android:name="org.cromite.cromite"/>
-		<package android:name="org.greatfire.freebrowser"/>
-		<package android:name="org.triple.banana"/>
-		<package android:name="us.spotco.mulch"/>
 	</queries>
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>

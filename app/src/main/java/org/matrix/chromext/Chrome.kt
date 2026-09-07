@@ -22,7 +22,6 @@ import org.matrix.chromext.devtools.DevSessions
 import org.matrix.chromext.devtools.getInspectPages
 import org.matrix.chromext.devtools.hitDevTools
 import org.matrix.chromext.hook.UserScriptHook
-import org.matrix.chromext.hook.WebViewHook
 import org.matrix.chromext.proxy.UserScriptProxy
 import org.matrix.chromext.script.Local
 import org.matrix.chromext.script.ScriptDbManager
@@ -37,15 +36,6 @@ object Chrome {
   private var mContext: WeakReference<Context>? = null
   private var mTab: WeakReference<Any>? = null
   private var devToolsReady = false
-
-  var isBrave = false
-  var isDev = false
-  var isEdge = false
-  var isMi = false
-  var isQihoo = false
-  var isSamsung = false
-  var isVivaldi = false
-  var isCocCoc = false
 
   lateinit var version: String
   lateinit var packageName: String
@@ -63,15 +53,6 @@ object Chrome {
     if (initialized || packageName == null) return
     this.packageName = packageName
 
-    isBrave =
-        packageName.startsWith("com.brave.browser") || packageName == "com.herond.android.browser"
-    isCocCoc = packageName.startsWith("com.coccoc.trinhduyet")
-    isDev = packageName.endsWith("canary") || packageName.endsWith("dev")
-    isEdge = packageName.startsWith("com.microsoft.emmx")
-    isMi = packageName == "com.mi.globalbrowser" || packageName == "com.android.browser"
-    isQihoo = packageName == "com.qihoo.contents"
-    isSamsung = packageName.startsWith("com.sec.android.app.sbrowser")
-    isVivaldi = packageName == "com.vivaldi.browser"
     @Suppress("DEPRECATION")
     val packageInfo = ctx.packageManager.getPackageInfo(packageName, 0)
     version = packageInfo.versionName ?: "null"
@@ -186,7 +167,6 @@ object Chrome {
   }
 
   fun getContext(): Context {
-    if (Chrome.isSamsung) return mContext!!.get()!!
     val activity =
         getTab()?.invokeMethod { name == "getContext" || returnType == Context::class.java }
             as Context?
@@ -223,34 +203,11 @@ object Chrome {
   fun updateTab(tab: Any?) {
     if (tab != null && tab != getTab()) {
       mTab = WeakReference(tab)
-      if (Chrome.isSamsung) {
-        val context = findField(UserScriptProxy.tabImpl) { name == "mContext" }
-        mContext = WeakReference(context.get(UserScriptProxy.mTab.get(tab)) as Context)
-      }
     }
   }
 
   fun getTabId(tab: Any?, url: String? = null): String {
-    if (WebViewHook.isInit || Chrome.isSamsung) {
-      if (url == null && getContext().mainLooper.getThread() != Thread.currentThread())
-          Log.w("Url parameter is missing in a non-UI thread")
-      val attached = !WebViewHook.isInit || tab == Chrome.getTab()
-      val ids = filterTabs {
-        if (getString("description") == "") {
-          optString("type") == "page" && optString("url") == url!!
-        } else {
-          val description = JSONObject(getString("description"))
-          optString("type") == "page" &&
-              optString("url") == url!! &&
-              !description.optBoolean("never_attached") &&
-              !(attached && !description.optBoolean("attached"))
-        }
-      }
-      if (ids.size > 1) Log.i("Multiple possible tabIds matched with url ${url}")
-      return ids.first()
-    } else {
-      return UserScriptProxy.getTabId(getTab(tab)!!)
-    }
+    return UserScriptProxy.getTabId(getTab(tab)!!)
   }
 
   fun injectFrames(tab: Any? = null) {
@@ -322,9 +279,7 @@ object Chrome {
       }
     } else {
       Handler(getContext().mainLooper).post {
-        if (WebViewHook.isInit) {
-          codes.forEach { WebViewHook.evaluateJavascript(it, tab) }
-        } else if (UserScriptHook.isInit) {
+        if (UserScriptHook.isInit) {
           val failed = codes.filter { !UserScriptProxy.evaluateJavascript(it, tab) }
           if (failed.size > 0) evaluateJavascript(failed, tab, frameId, true)
         }
@@ -340,15 +295,6 @@ object Chrome {
   ) {
     val code = "Symbol.${Local.name}.unlock(${Local.key}).post('${event}', ${data});"
     Log.d("broadcasting ${event}")
-    if (WebViewHook.isInit) {
-      val tabs =
-          WebViewHook.records.filter {
-            matching(it.get()?.invokeMethod() { name == "getUrl" } as String?)
-          }
-      if (tabs.size > 1 || !excludeSelf)
-          tabs.forEach { WebViewHook.evaluateJavascript(code, it.get()) }
-      return
-    }
     IO.submit {
       val tabs = filterTabs {
         optString("type") == "page" &&

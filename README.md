@@ -2,7 +2,7 @@ o0kam1 fork 的 ChromeXt
 
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/duzhaokun123/ChromeXt/android.yml?branch=master&event=push&style=flat-square&logo=github)
 
-只会尝试兼容最新 Chrome
+只会尝试兼容最新 稳定 Chrome
 **不会**兼容任何其他浏览器
 
 [原始 README](README.bak.md)

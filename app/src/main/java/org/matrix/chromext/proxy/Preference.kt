@@ -47,7 +47,7 @@ object PreferenceProxy {
 
   private val preferenceFragmentCompat =
       loopOverSuperClass(developerSettings.superclass as Class<*>) {
-        (!Chrome.isBrave && !it.name.startsWith("org.chromium.chrome")) ||
+        (!it.name.startsWith("org.chromium.chrome")) ||
             it.superclass.name.startsWith("androidx.fragment") ||
             it.superclass.superclass.name == "java.lang.Object"
       }
@@ -150,10 +150,6 @@ object PreferenceProxy {
                 },
             "exit" to
                 fun(_: Any) {
-                  if (Chrome.isDev || Chrome.isVivaldi) {
-                    Log.toast(ctx, "Feature unavailable")
-                    return
-                  }
                   with(
                       ctx.getSharedPreferences(
                               Chrome.getContext().packageName + "_preferences",

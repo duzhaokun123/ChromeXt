@@ -1,36 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string-array name="xposedscope">
-		<item>app.vanadium.browser</item>
-		<item>com.android.browser</item>
 		<item>com.android.chrome</item>
-		<item>com.brave.browser</item>
-		<item>com.brave.browser_beta</item>
-		<item>com.brave.browser_nightly</item>
-		<item>com.chrome.beta</item>
-		<item>com.chrome.canary</item>
-		<item>com.chrome.dev</item>
-		<item>com.coccoc.trinhduyet</item>
-		<item>com.coccoc.trinhduyet_beta</item>
-		<item>com.herond.android.browser</item>
-		<item>com.kiwibrowser.browser</item>
-		<item>com.mi.globalbrowser</item>
-		<item>com.microsoft.emmx</item>
-		<item>com.microsoft.emmx.beta</item>
-		<item>com.microsoft.emmx.canary</item>
-		<item>com.microsoft.emmx.dev</item>
-		<item>com.naver.whale</item>
-		<item>com.sec.android.app.sbrowser</item>
-		<item>com.sec.android.app.sbrowser.beta</item>
-		<item>com.vivaldi.browser</item>
-		<item>com.vivaldi.browser.snapshot</item>
-		<item>org.axpos.aosmium</item>
-		<item>org.bromite.bromite</item>
-		<item>org.chromium.chrome</item>
-		<item>org.chromium.thorium</item>
-		<item>org.cromite.cromite</item>
-		<item>org.greatfire.freebrowser</item>
-		<item>org.triple.banana</item>
-		<item>us.spotco.mulch</item>
 	</string-array>
 </resources>

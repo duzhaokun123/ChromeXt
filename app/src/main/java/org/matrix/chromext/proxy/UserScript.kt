@@ -8,7 +8,6 @@ import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.findField
 import org.matrix.chromext.utils.findMethod
 import org.matrix.chromext.utils.findMethodOrNull
-import org.matrix.chromext.utils.invokeMethod
 import org.matrix.chromext.utils.parseOrigin
 
 object UserScriptProxy {
@@ -18,32 +17,16 @@ object UserScriptProxy {
 
   val gURL = Chrome.load("org.chromium.url.GURL")
   val loadUrlParams =
-      if (Chrome.isSamsung) {
-        Chrome.load("com.sec.android.app.sbrowser.tab.LoadUrlParams")
-      } else {
-        Chrome.load("org.chromium.content_public.browser.LoadUrlParams")
-      }
+      Chrome.load("org.chromium.content_public.browser.LoadUrlParams")
   // val tabModelJniBridge = Chrome.load("org.chromium.chrome.browser.tabmodel.TabModelJniBridge")
   val tabWebContentsDelegateAndroidImpl =
-      if (Chrome.isSamsung) {
-        Chrome.load("com.sec.android.app.sbrowser.tab.Tab")
-      } else {
-        Chrome.load("org.chromium.chrome.browser.tab.TabWebContentsDelegateAndroidImpl")
-      }
+      Chrome.load("org.chromium.chrome.browser.tab.TabWebContentsDelegateAndroidImpl")
   val navigationControllerImpl =
       Chrome.load("org.chromium.content.browser.framehost.NavigationControllerImpl")
   val chromeTabbedActivity =
-      if (Chrome.isSamsung) {
-        Chrome.load("com.sec.terrace.TerraceActivity")
-      } else {
-        Chrome.load("org.chromium.chrome.browser.ChromeTabbedActivity")
-      }
+      Chrome.load("org.chromium.chrome.browser.ChromeTabbedActivity")
   val tabImpl =
-      if (Chrome.isSamsung) {
-        Chrome.load("com.sec.terrace.Terrace")
-      } else {
-        Chrome.load("org.chromium.chrome.browser.tab.TabImpl")
-      }
+      Chrome.load("org.chromium.chrome.browser.tab.TabImpl")
   private val getId = findMethod(tabImpl) { name == "getId" }
   val mTab = findField(tabWebContentsDelegateAndroidImpl) { type == tabImpl }
 
@@ -71,15 +54,14 @@ object UserScriptProxy {
 
   val getUrl = findMethodOrNull(tabImpl) { returnType == gURL }
   val loadUrl =
-      findMethod(if (Chrome.isSamsung) tabWebContentsDelegateAndroidImpl else tabImpl) {
-        parameterTypes contentDeepEquals arrayOf(loadUrlParams) &&
-            (Chrome.isSamsung || returnType != Void.TYPE)
+      findMethod(tabImpl) {
+        parameterTypes contentDeepEquals arrayOf(loadUrlParams) && (returnType != Void.TYPE)
       }
 
   val kMaxURLChars = 2097152
 
   private fun loadUrl(url: String, tab: Any? = Chrome.getTab()) {
-    if (!Chrome.isSamsung && !Chrome.checkTab(tab)) return
+    if (!Chrome.checkTab(tab)) return
     loadUrl.invoke(tab, newLoadUrlParams(url))
   }
 
@@ -102,12 +84,6 @@ object UserScriptProxy {
 
   fun evaluateJavascript(script: String, tab: Any? = Chrome.getTab()): Boolean {
     if (script == "") return true
-    if (Chrome.isSamsung) {
-      mTab.get(tab ?: Chrome.getTab())?.invokeMethod(script, null) {
-        name == "evaluateJavaScriptForTests"
-      }
-      return true
-    }
     if (script.length > kMaxURLChars - 20000) return false
     val code = Uri.encode(script)
     if (code.length < kMaxURLChars - 200) {
@@ -119,7 +95,7 @@ object UserScriptProxy {
   }
 
   fun getTab(delegate: Any): Any? {
-    return if (Chrome.isSamsung) delegate else mTab.get(delegate)
+    return mTab.get(delegate)
   }
 
   fun parseUrl(packed: Any?): String? {
@@ -144,13 +120,9 @@ object UserScriptProxy {
       // Log.d("Change User-Agent header: ${origin}")
       if (ScriptDbManager.userAgents.contains(origin)) {
         val header = "user-agent: ${ScriptDbManager.userAgents.get(origin)}\r\n"
-        if (Chrome.isSamsung) {
-          urlParams.invokeMethod(header) { name == "setVerbatimHeaders" }
-        } else {
-          val mVerbatimHeaders =
-              loadUrlParams.declaredFields.filter { it.type == String::class.java }[1]
-          mVerbatimHeaders.set(urlParams, header)
-        }
+        val mVerbatimHeaders =
+            loadUrlParams.declaredFields.filter { it.type == String::class.java }[1]
+        mVerbatimHeaders.set(urlParams, header)
         return true
       }
     }
