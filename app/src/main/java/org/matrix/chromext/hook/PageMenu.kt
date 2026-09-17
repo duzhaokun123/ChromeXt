@@ -324,8 +324,6 @@ object PageMenuHook : BaseHook() {
     val mType = findField(MVCListAdapter_ListItem) { type == Int::class.java }
     // the original field name was "type"
 
-    val mData = findField(proxy.propertyModel) { type == HashMap::class.java }
-
     return findMethod(tabbedAppMenuPropertiesDelegate) {
           parameterTypes.size == 0 && returnType == MVCListAdapter_ModelList
         }
@@ -338,34 +336,8 @@ object PageMenuHook : BaseHook() {
           Resource.enrich(ctx)
           val url = getUrl()
 
-          @Suppress("UNCHECKED_CAST") val menuModels = mItems.get(it.result) as MutableList<Any>
-
           @Suppress("UNCHECKED_CAST")
-          val iconModels = mData.get(model.get(menuModels[0])) as Map<Any, Any?>
-          val additionalIcons =
-              iconModels.entries
-                  .find { it.key.toString() == "ADDITIONAL_ICONS" }
-                  ?.let {
-                    it.value ?: return@let null
-                    val _value = it.value!!::class.java.declaredFields[0]
-                    _value.get(it.value)
-                  }
-          if (additionalIcons != null) {
-            @Suppress("UNCHECKED_CAST") val icons = mItems.get(additionalIcons) as ArrayList<Any>
-            @Suppress("UNCHECKED_CAST")
-            val pageInfoModel = mData.get(model.get(icons[3])) as Map<Any, Any?>
-            pageInfoModel.forEach {
-              if (it.value == null) {
-                return@forEach
-              }
-              val _value = it.value!!::class.java.declaredFields[0].also { it.setAccessible(true) }
-              if (it.key.toString() == "MENU_ITEM_ID") {
-                _value.set(it.value, readerMode.ID)
-              } else if (it.key.toString() == "ICON") {
-                _value.set(it.value, ctx.resources.getDrawable(R.drawable.ic_book, null))
-              }
-            }
-          }
+          val menuModels = mItems.get(it.result) as MutableList<Any>
 
           val skip = menuModels.size <= 10 || isChromeScheme(url)
           if (skip && !isUserScript(url)) return@hookAfter
