@@ -2,15 +2,10 @@ package org.matrix.chromext.hook
 
 import android.content.Context
 import android.os.Bundle
-import android.util.DisplayMetrics
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
 import android.view.View
 import de.robv.android.xposed.XC_MethodHook.Unhook
 import java.lang.reflect.Modifier
 import java.util.ArrayList
-import java.util.LinkedHashSet
 import org.matrix.chromext.Chrome
 import org.matrix.chromext.Listener
 import org.matrix.chromext.R
@@ -65,33 +60,6 @@ enum class EntryPoint(val value: Int) {
   TOOLBAR_BUTTON(3),
 }
 
-object readerMode {
-  val ID = 31415926
-
-  fun activate() {
-    @Suppress("UNCHECKED_CAST")
-    val observers = (PageMenuProxy.mObservers.get(Chrome.getTab()) as Iterable<Any>).toList()
-    val readerModeManager =
-        observers.find {
-          findFieldOrNull(it::class.java) {
-            type == LinkedHashSet::class.java && Modifier.isStatic(modifiers)
-          } != null &&
-              findFieldOrNull(it::class.java) { type == PageMenuProxy.propertyModel } != null
-        }!!
-
-    readerModeManager::class
-        .java
-        .declaredMethods
-        .find {
-          // public void activateReaderMode(@EntryPoint int entryPoint)
-          it.parameterTypes contentEquals arrayOf(Int::class.java) &&
-              !Modifier.isStatic(it.modifiers) &&
-              it.returnType == Void.TYPE
-        }
-        ?.invoke(readerModeManager, EntryPoint.UNKNOWN.value)
-  }
-}
-
 object PageMenuHook : BaseHook() {
 
   private fun getUrl(): String {
@@ -99,15 +67,10 @@ object PageMenuHook : BaseHook() {
   }
 
   override fun init() {
-
     if (ContextMenuHook.isInit) return
     val proxy = PageMenuProxy
 
     fun menuHandler(ctx: Context, id: Int): Boolean {
-      if (id == readerMode.ID) {
-        readerMode.activate()
-        return true
-      }
       when (ctx.resources.getResourceName(id)) {
         "org.matrix.chromext:id/extension_id" -> {
           Listener.on("extension")
@@ -179,7 +142,6 @@ object PageMenuHook : BaseHook() {
   }
 
   fun inflateAppMenu(tabbedAppMenuPropertiesDelegate: Class<*>): Unhook {
-    val proxy = PageMenuProxy
     val appMenuPropertiesDelegateImpl = tabbedAppMenuPropertiesDelegate.superclass as Class<*>
     // Can be found by searching `Android.PrepareMenu`
 
@@ -187,103 +149,6 @@ object PageMenuHook : BaseHook() {
     val mContext = findField(appMenuPropertiesDelegateImpl, true) { type == parameters[0] }
     val mActivityTabProvider =
         findField(appMenuPropertiesDelegateImpl, true) { type == parameters[1] }
-
-    val prepareMenu =
-        findMethodOrNull(appMenuPropertiesDelegateImpl, true) {
-          parameterTypes.size == 2 &&
-              parameterTypes.first() == Menu::class.java &&
-              returnType == Void.TYPE &&
-              !Modifier.isStatic(modifiers) &&
-              !Modifier.isAbstract(modifiers)
-        }
-    // public void prepareMenu(Menu menu, AppMenuHandler handler)
-
-    if (prepareMenu != null)
-        return prepareMenu.hookAfter prepare@{
-          val tabProvider = mActivityTabProvider.get(it.thisObject)!!
-          Chrome.updateTab(tabProvider.invokeMethod { name == "get" })
-          val ctx = mContext.get(it.thisObject) as Context
-          Resource.enrich(ctx)
-
-          val menu = it.args[0] as Menu
-          val url = getUrl()
-
-          val iconRowMenu = menu.getItem(0)
-          if (iconRowMenu.hasSubMenu()) {
-            val infoMenu = iconRowMenu.getSubMenu()!!.getItem(3)
-            infoMenu.setIcon(R.drawable.ic_book)
-            infoMenu.setEnabled(true)
-            val mId = infoMenu::class.java.getDeclaredField("mId")
-            mId.setAccessible(true)
-            mId.set(infoMenu, readerMode.ID)
-            mId.setAccessible(false)
-          }
-
-          val mItems = menu::class.java.getDeclaredField("mItems").also { it.setAccessible(true) }
-
-          @Suppress("UNCHECKED_CAST") val items = mItems.get(menu) as ArrayList<MenuItem>
-
-          val skip = items.filter { it.isVisible() }.size <= 10 || isChromeScheme(url)
-          // Inflate only for the main_menu, which has more than visible 10 items at least
-
-          if (skip && !isUserScript(url)) return@prepare
-          MenuInflater(ctx).inflate(R.menu.main_menu, menu)
-
-          // Show items with indices in main_menu.xml
-          val toShow = mutableListOf<Int>(1) // Reversed index in main_menu
-
-          if (isDevToolsFrontEnd(url)) {
-            toShow.clear()
-          }
-
-          if (isUserScript(url)) {
-            toShow.clear()
-            toShow.add(2)
-            if (skip) {
-              // Show this menu for local preview pages (Custom Tab) of UserScripts
-              items.find { it.itemId == R.id.install_script_id }?.setVisible(true)
-              return@prepare
-            }
-          }
-
-          if (isChromeXtFrontEnd(url)) {
-            toShow.clear()
-            toShow.addAll(listOf(3, 4))
-          }
-
-          if (ctx.resources.configuration.smallestScreenWidthDp >= DisplayMetrics.DENSITY_XXHIGH &&
-              toShow.size == 1 &&
-              toShow.first() == 1) {
-            iconRowMenu.setVisible(true)
-          }
-
-          val position =
-              items
-                  .withIndex()
-                  .filter {
-                    ctx.resources
-                        .getResourceName(it.value.getItemId())
-                        .endsWith("id/divider_line_id")
-                  }
-                  .map { it.index }[1]
-
-          toShow.forEach {
-            val newMenuItem: MenuItem = items[items.size - it]
-            newMenuItem.setVisible(true)
-            items.add(position + 1, newMenuItem)
-          }
-          for (i in 0..3) items.removeLast()
-        }
-
-    // Inflate for MVC UI model
-    val maybeAddDividerLine =
-        findMethodOrNull(tabbedAppMenuPropertiesDelegate) {
-          parameterTypes.size == 2 &&
-              parameterTypes[1] == Int::class.java &&
-              returnType == Void.TYPE &&
-              !Modifier.isAbstract(modifiers)
-        }
-    // private void maybeAddDividerLine(MVCListAdapter.ModelList modelList, @IdRes int id)
 
     val buildModelForStandardMenuItem = PageMenuProxy.method_AppMenuItemUtils_buildModelForStandardMenuItem
     //  org.chromium.chrome.browser.app.appmenu.AppMenuItemTheme
@@ -320,7 +185,6 @@ object PageMenuHook : BaseHook() {
         }
     // private MVCListAdapter.ListItem buildNewIncognitoTabItem()
     val MVCListAdapter_ListItem = buildNewIncognitoTabItem.returnType
-    val model = findField(MVCListAdapter_ListItem) { type == proxy.propertyModel }
     val mType = findField(MVCListAdapter_ListItem) { type == Int::class.java }
     // the original field name was "type"
 
