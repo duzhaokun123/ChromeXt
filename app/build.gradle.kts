@@ -52,7 +52,7 @@ android {
 dependencies {
   compileOnly("de.robv.android.xposed:api:82")
   implementation("org.luckypray:dexkit:2.2.0")
-  implementation("net.bytebuddy:byte-buddy-android:1.18.14-jdk5")
+  implementation("net.bytebuddy:byte-buddy-android:1.18.14")
   implementation("androidx.annotation:annotation:1.10.0")
   implementation("com.github.iamironz:unsafe:0.0.6")
   implementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
