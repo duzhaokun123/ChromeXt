@@ -330,7 +330,9 @@ function GM_removeValueChangeListener(index) {
 // Kotlin separator
 
 function GM_unregisterMenuCommand(index) {
-  LockedChromeXt.unlock(key).commands[index].enabled = false;
+  const ChromeXt = LockedChromeXt.unlock(key);
+  ChromeXt.commands[index].enabled = false;
+  ChromeXt.dispatch("unregisterMenuCommand", {index: index, chromeXtId: ChromeXt.id})
 }
 // Kotlin separator
 
@@ -403,11 +405,17 @@ function GM_openInTab(url, options = true) {
 
 function GM_registerMenuCommand(title, listener, _accessKey = "Dummy") {
   const ChromeXt = LockedChromeXt.unlock(key);
-  const index = ChromeXt.commands.findIndex(
+  let index = ChromeXt.commands.findIndex(
     (e) => e.id == GM_info.script.id && e.title == title
   );
   if (index != -1) {
     ChromeXt.commands[index].listener = listener;
+    ChromeXt.dispatch("registerMenuCommand", {
+      index: index,
+      title: title,
+      scriptName: GM_info.script.id.split(':').at(-1),
+      chromeXtId: ChromeXt.id
+    })
     return index;
   }
   ChromeXt.commands.push({
@@ -416,7 +424,14 @@ function GM_registerMenuCommand(title, listener, _accessKey = "Dummy") {
     listener,
     enabled: true,
   });
-  return ChromeXt.commands.length - 1;
+  index = ChromeXt.commands.length - 1;
+  ChromeXt.dispatch("registerMenuCommand", {
+    index: index,
+    title: title,
+    scriptName: GM_info.script.id.split(':').at(-1),
+    chromeXtId: ChromeXt.id
+  })
+  return index;
 }
 // Kotlin separator
 

@@ -1,8 +1,10 @@
 package org.matrix.chromext.hook
 
 import android.content.Context
+import android.content.res.Resources
 import android.os.Bundle
 import android.view.View
+import chromium.AppMenuHandler
 import de.robv.android.xposed.XC_MethodHook.Unhook
 import java.lang.reflect.Modifier
 import java.util.ArrayList
@@ -14,6 +16,8 @@ import org.matrix.chromext.proxy.PageMenuProxy
 import org.matrix.chromext.proxy.UserScriptProxy
 import org.matrix.chromext.script.Local
 import org.matrix.chromext.utils.*
+import java.lang.reflect.Constructor
+import java.util.function.Supplier
 
 enum class AppMenuItemType(val value: Int) {
   /** Regular Android menu item that contains a title and an icon if icon is specified. */
@@ -71,6 +75,12 @@ object PageMenuHook : BaseHook() {
     val proxy = PageMenuProxy
 
     fun menuHandler(ctx: Context, id: Int): Boolean {
+      val commandItem = UserScriptMenuCommand.getRegisterMenuCommand(Chrome.getFocusedChromeXtId(), id)
+      if (commandItem != null) {
+        UserScriptProxy.evaluateJavascript("Symbol.${Local.name}.unlock(${Local.key}, false).commands[${commandItem.index}].listener()")
+        return false
+      }
+
       when (ctx.resources.getResourceName(id)) {
         "org.matrix.chromext:id/extension_id" -> {
           Listener.on("extension")
@@ -258,6 +268,7 @@ object PageMenuHook : BaseHook() {
           } else {
             menusToAdd.add(
                 itemConstuctor.newInstance(localMenus[3], AppMenuItemType.STANDARD.value))
+            menusToAdd.add(createUserScriptMenus(itemConstuctor, mAppMenuItemTheme))
           }
 
           val injectPosition =
@@ -266,5 +277,80 @@ object PageMenuHook : BaseHook() {
                   .let { menuModels.indexOf(it) }
           menuModels.addAll(injectPosition + 1, menusToAdd)
         }
+  }
+
+  private fun createUserScriptMenus(
+    `constructor_MVCListAdapter$ListItem`: Constructor<*>,
+    theme: Any?
+  ): Any {
+    val usedTemplateIds = mutableSetOf<Int>()
+    val scriptNameItems = mutableListOf<Any>()
+    UserScriptMenuCommand.getRegisterMenuCommands(Chrome.getFocusedChromeXtId())
+      .groupBy { item -> item.scriptName }
+      .forEach { (name, items) ->
+        val scriptCommandItems = mutableListOf<Any>()
+        items.forEach { item ->
+          val titleId =
+            ChromeXtModuleContext.addStringRes(item.title).also { usedTemplateIds.add(it) }
+          val model = PageMenuProxy.method_AppMenuItemUtils_buildModelForStandardMenuItem.invoke(
+            null,
+            ChromeXtModuleContext.instance(),
+            theme,
+            item.id,
+            titleId,
+            Resources.ID_NULL,
+            false
+          )
+          val listItem = PageMenuProxy.method_AppMenuItemUtils_createStandardListItem.invoke(
+            null,
+            model,
+            /* showIcon = */ false
+          )!!
+          scriptCommandItems.add(listItem)
+        }
+        val titleId = ChromeXtModuleContext.addStringRes(name).also { usedTemplateIds.add(it) }
+        val model = PageMenuProxy.method_AppMenuItemUtils_buildModelForMenuItemWithSubmenu.invoke(
+          null,
+          ChromeXtModuleContext.instance(),
+          theme,
+          Resources.ID_NULL,
+          titleId,
+          Resources.ID_NULL,
+          object : Supplier<List<Any>> {
+            override fun get(): List<Any> {
+              return scriptCommandItems
+            }
+          },
+          false
+        )
+        val listItem =
+          PageMenuProxy.method_AppMenuItemUtils_createMenuItemWithSubmenuListItem.invoke(
+            null,
+            model,
+            /* showIcon = */ false
+          )!!
+        scriptNameItems.add(listItem)
+      }
+    val model = PageMenuProxy.method_AppMenuItemUtils_buildModelForMenuItemWithSubmenu.invoke(
+      null,
+      ChromeXtModuleContext.instance(),
+      theme,
+      Resources.ID_NULL,
+      R.string.main_menu_userscript,
+      R.drawable.ic_extension,
+      object : Supplier<List<Any>> {
+        override fun get(): List<Any> {
+          return scriptNameItems
+        }
+      },
+      false
+    )
+    usedTemplateIds.forEach { id ->
+      ChromeXtModuleContext.removeStringRes(id)
+    }
+    return `constructor_MVCListAdapter$ListItem`.newInstance(
+      model,
+      AppMenuHandler.AppMenuItemType.MENU_ITEM_WITH_SUBMENU
+    )
   }
 }

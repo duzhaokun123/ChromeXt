@@ -12,7 +12,11 @@ dependencyResolutionManagement {
     google()
     mavenCentral()
     maven("https://api.xposed.info/")
-    // maven("https://jitpack.io")
+    maven("https://jitpack.io") {
+      content {
+        includeGroup("com.github.iamironz")
+      }
+    }
   }
 }
 

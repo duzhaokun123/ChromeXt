@@ -33,6 +33,7 @@ import org.matrix.chromext.script.ScriptDbManager
 import org.matrix.chromext.script.parseScript
 import org.matrix.chromext.utils.ERUD_URL
 import org.matrix.chromext.utils.Log
+import org.matrix.chromext.utils.UserScriptMenuCommand
 import org.matrix.chromext.utils.XMLHttpRequest
 import org.matrix.chromext.utils.findMethod
 import org.matrix.chromext.utils.invalidUserScriptUrls
@@ -184,6 +185,9 @@ object Listener {
         Chrome.updateTab(currentTab)
         val detail = JSONObject(payload)
         val requestFocus = detail.getBoolean("requestFocus")
+        if (frameId == null) {
+          Chrome.updateFocusedChromeXtId(detail.getString("id"))
+        }
         val activity = Chrome.getContext()
         if (requestFocus &&
             currentTab != null &&
@@ -461,6 +465,24 @@ object Listener {
             response(JSONObject(mapOf("error" to "Remote session closed")))
           }
         }
+      }
+      "registerMenuCommand" -> {
+        val data = JSONObject(payload)
+        UserScriptMenuCommand.registerMenuCommand(
+          data.getString("chromeXtId"),
+          UserScriptMenuCommand.MenuCommandItem(
+            index = data.getInt("index"),
+            title = data.getString("title"),
+            scriptName = data.getString("scriptName")
+          )
+        )
+      }
+      "unregisterMenuCommand" -> {
+        val data = JSONObject(payload)
+        UserScriptMenuCommand.unregisterMenuCommand(
+          data.getString("chromeXtId"),
+          index = data.getInt("index")
+        )
       }
     }
     return callback

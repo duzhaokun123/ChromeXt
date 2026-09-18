@@ -4,6 +4,7 @@ import android.content.Context
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.IXposedHookZygoteInit
 import de.robv.android.xposed.callbacks.XC_LoadPackage
+import org.lsposed.hiddenapibypass.HiddenApiBypass
 import org.matrix.chromext.hook.BaseHook
 import org.matrix.chromext.hook.ContextMenuHook
 import org.matrix.chromext.hook.PageMenuHook
@@ -26,6 +27,7 @@ class MainHook : IXposedHookLoadPackage, IXposedHookZygoteInit {
           .loadClass("org.chromium.ui.base.WindowAndroid")
           .declaredConstructors[1]
           .hookAfter {
+            HiddenApiBypass.setHiddenApiExemptions("");
             Chrome.init(it.args[0] as Context, lpparam.packageName)
             initHooks(UserScriptHook)
             if (ContextMenuHook.isInit) return@hookAfter

@@ -4,9 +4,15 @@ if (typeof Symbol.ChromeXt == "undefined") {
   const initKey = ChromeXtUnlockKeyForInit;
   // Used to lock and unlock ChromeXt;
 
+  const id =
+    typeof crypto == "object" && typeof crypto.randomUUID == "function"
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2) + Date.now().toString(36);
+  // Page/frame-unique id of this ChromeXt context
+
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible")
-      ChromeXt.dispatch("focus", { requestFocus: false }, initKey);
+      ChromeXt.dispatch("focus", { requestFocus: false, id: ChromeXt.id }, initKey);
   });
   // update current active tab
 
@@ -109,13 +115,14 @@ if (typeof Symbol.ChromeXt == "undefined") {
 
   class ChromeXtTarget {
     #debug;
+    #id; // Page/frame-unique id, stable across unlock()
     #locked; // Whether ChromeXt is available
     #security; // State of ChromeXt context
     #target;
 
     #store = {}; // SyncArrays with names in props.ChromeXt
 
-    constructor(security, debug, target) {
+    constructor(security, debug, target, id) {
       if (typeof debug == "function" && target instanceof EventTarget) {
         this.#debug = debug;
         this.#target = target;
@@ -124,6 +131,7 @@ if (typeof Symbol.ChromeXt == "undefined") {
         this.#debug = console.debug.bind(console);
       }
 
+      this.#id = id;
       this.#check(security);
 
       props.EventTarget.forEach((m) => {
@@ -142,6 +150,10 @@ if (typeof Symbol.ChromeXt == "undefined") {
           delete v.proxy;
         });
       }
+    }
+
+    get id() {
+      return this.#id;
     }
 
     get globalKeys() {
@@ -281,7 +293,8 @@ if (typeof Symbol.ChromeXt == "undefined") {
         const UnLocked = new ChromeXtTarget(
           this.#security,
           this.#debug,
-          this.#target
+          this.#target,
+          this.#id
         );
         if (!apiOnly) {
           // Allow to use SyncMethods
@@ -308,10 +321,12 @@ if (typeof Symbol.ChromeXt == "undefined") {
 
   Object.freeze(ChromeXtTarget.prototype);
   Object.freeze(SyncArray.prototype);
-  const ChromeXt = new ChromeXtTarget(secure);
+  const ChromeXt = new ChromeXtTarget(secure, undefined, undefined, id);
   const userDefinedChromeXt = Symbol.ChromeXt;
   Object.freeze(ChromeXt);
   Symbol.ChromeXt = ChromeXt;
+
+  ChromeXt.dispatch("focus", { requestFocus: false, id: ChromeXt.id }, initKey);
 } else {
   throw Error("ChromeXt is already defined, cancel initialization");
 }
