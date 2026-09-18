@@ -11,12 +11,14 @@ import org.matrix.chromext.TAG
 object Log {
   private var lastToast: WeakReference<Toast>? = null
 
-  fun i(msg: String) {
+  fun i(vararg messages: Any?) {
+    val msg = messages.normalizeToSting()
     Log.i(TAG, msg)
     XposedBridge.log("ChromeXt logging: " + msg)
   }
 
-  fun d(msg: String, full: Boolean = false) {
+  fun d(vararg messages: Any?, full: Boolean = false) {
+    val msg = messages.normalizeToSting()
     if (BuildConfig.DEBUG) {
       if (!full && msg.length > 300) {
         Log.d(TAG, msg.take(300) + " ...")
@@ -26,25 +28,39 @@ object Log {
     }
   }
 
-  fun w(msg: String) {
+  fun w(vararg messages: Any?) {
+    val msg = messages.normalizeToSting()
     Log.w(TAG, msg)
   }
 
-  fun e(msg: String) {
+  fun e(vararg messages: Any?) {
+    val msg = messages.normalizeToSting()
     Log.e(TAG, msg)
     XposedBridge.log("ChromeXt error: " + msg)
   }
 
-  fun ex(thr: Throwable, msg: String = "") {
+  fun ex(thr: Throwable, vararg messages: Any?) {
+    val msg = messages.normalizeToSting()
     Log.e(TAG, msg, thr)
     XposedBridge.log("ChromeXt exception caught: [${msg}] " + thr.toString())
   }
 
-  fun toast(context: Context, msg: String) {
+  fun toast(context: Context, vararg messages: Any?) {
+    val msg = messages.normalizeToSting()
     this.lastToast?.get()?.cancel()
     val duration = Toast.LENGTH_SHORT
     val toast = Toast.makeText(context, msg, duration)
     toast.show()
     this.lastToast = WeakReference(toast)
+  }
+
+  private fun Array<*>.normalizeToSting(): String {
+    return this.joinToString(separator = " ") {
+      when (it) {
+        is Throwable -> it.stackTraceToString()
+        is Array<*> -> it.contentDeepToString()
+        else -> it.toString()
+      }
+    }
   }
 }
