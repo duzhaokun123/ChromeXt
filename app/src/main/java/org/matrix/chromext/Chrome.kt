@@ -36,7 +36,6 @@ object Chrome {
   private var mContext: WeakReference<Context>? = null
   private var mTab: WeakReference<Any>? = null
   private var devToolsReady = false
-  private var focusedChromeXtId: String = ""
 
   lateinit var version: String
   lateinit var packageName: String
@@ -307,14 +306,6 @@ object Chrome {
       if (tabs.size > 1 || !excludeSelf)
           tabs.forEach { evaluateJavascriptDevTools(listOf(code), it, false) }
     }
-  }
-
-  fun updateFocusedChromeXtId(id: String) {
-    focusedChromeXtId = id
-  }
-
-  fun getFocusedChromeXtId(): String {
-    return focusedChromeXtId
   }
 
   private fun filterTabs(condition: JSONObject.() -> Boolean): List<String> {

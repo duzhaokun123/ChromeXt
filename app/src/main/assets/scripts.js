@@ -12,7 +12,7 @@ if (typeof Symbol.ChromeXt == "undefined") {
 
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible")
-      ChromeXt.dispatch("focus", { requestFocus: false, id: ChromeXt.id }, initKey);
+      ChromeXt.dispatch("focus", { requestFocus: false }, initKey);
   });
   // update current active tab
 
@@ -325,8 +325,6 @@ if (typeof Symbol.ChromeXt == "undefined") {
   const userDefinedChromeXt = Symbol.ChromeXt;
   Object.freeze(ChromeXt);
   Symbol.ChromeXt = ChromeXt;
-
-  ChromeXt.dispatch("focus", { requestFocus: false, id: ChromeXt.id }, initKey);
 } else {
   throw Error("ChromeXt is already defined, cancel initialization");
 }

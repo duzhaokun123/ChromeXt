@@ -106,6 +106,8 @@ object Local {
 
   // lineNumber of the anchor in GM.js, used to verify ChromeXt.dispatch
 
+  val updateMenuCommands: String
+
   init {
     val ctx = Chrome.getContext()
     Resource.enrich(ctx)
@@ -151,6 +153,13 @@ object Local {
             .replaceFirst("ChromeXtUnlockKeyForEruda", key.toString())
     cspRule = localScript[2]
     cosmeticFilter = localScript[3]
+
+    updateMenuCommands = ctx.assets
+      .open("scripts/updateMenuCommands.js")
+      .reader()
+      .use { it.readText() }
+      .replace("PlaceHolder_name", name)
+      .replace("PlaceHolder_key", key.toString())
   }
 
   fun getErudaVersion(ctx: Context = Chrome.getContext(), versionText: String? = null): String? {

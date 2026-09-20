@@ -1,6 +1,8 @@
 package org.matrix.chromext.utils
 
-import android.view.View
+import kotlinx.coroutines.CompletableDeferred
+import org.matrix.chromext.Chrome
+import java.util.concurrent.ConcurrentHashMap
 
 object UserScriptMenuCommand {
   data class MenuCommandItem(
@@ -8,26 +10,25 @@ object UserScriptMenuCommand {
     val title: String,
     val scriptName: String,
     var enabled: Boolean = true,
-    val id: Int = View.generateViewId()
+    val id: Int = indexToId(index)
   )
 
-  private val map = mutableMapOf<String, MutableMap<Int, MenuCommandItem>>()
-
-  fun registerMenuCommand(chromeXtId: String, item: MenuCommandItem) {
-    map.getOrPut(chromeXtId, { mutableMapOf() })
-      .getOrPut(item.index, { item })
-      .enabled = true
+  fun indexToId(index: Int): Int = 0x00FF0000 or index
+  fun idToIndex(id: Int): Int {
+    if (id and 0xFFFF0000.toInt() != 0x00FF0000) return -1
+    return id and 0x0000FFFF
   }
 
-  fun unregisterMenuCommand(chromeXtId: String, index: Int) {
-    map.getOrPut(chromeXtId, { mutableMapOf() })[index]?.enabled = false
+  private val deferreds = ConcurrentHashMap<String, CompletableDeferred<List<MenuCommandItem>>>()
+
+  fun getDeferredMenuCommandsForTab(tab: Any?): CompletableDeferred<List<MenuCommandItem>> {
+    val tabId = Chrome.getTabId(tab)
+    return deferreds.getOrPut(tabId, { CompletableDeferred()})
   }
 
-  fun getRegisterMenuCommands(chromeXtId: String?): List<MenuCommandItem> {
-    return map[chromeXtId]?.values?.filter { item -> item.enabled } ?: emptyList()
-  }
-
-  fun getRegisterMenuCommand(chromeXtId: String?, id: Int): MenuCommandItem? {
-    return map[chromeXtId]?.values?.find { item -> item.enabled && item.id == id }
+  fun updateMenuCommandsForTab(tab: Any?, commands: List<MenuCommandItem>) {
+    val tabId = Chrome.getTabId(tab)
+    deferreds.remove(tabId)?.complete(commands)
+      ?: Log.w("updateMenuCommandsForTab called for $tabId but no getDeferredMenuCommandsForTab called first")
   }
 }

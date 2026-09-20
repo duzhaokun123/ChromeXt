@@ -9,3 +9,8 @@ o0kam1 fork 的 ChromeXt
 
 下载从 [GitHub Actions](https://github.com/duzhaokun123/ChromeXt/actions/workflows/android.yml?query=event%3Apush+branch%3Amaster)
 不要相信 Release
+
+## TODO
+
+- `org.matrix.chromext.Listener` 明确区分 `js -> kotlin` `kotlin -> kotlin` 事件
+  - 也许需要改为内部广播

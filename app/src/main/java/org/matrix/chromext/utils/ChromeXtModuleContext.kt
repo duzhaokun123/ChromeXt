@@ -13,6 +13,7 @@ import net.bytebuddy.implementation.bind.annotation.RuntimeType
 import net.bytebuddy.matcher.ElementMatchers
 import org.matrix.chromext.Chrome
 import java.lang.reflect.Method
+import java.util.Collections
 
 
 /**
@@ -38,7 +39,7 @@ object ChromeXtModuleContext {
   }
   private val byteBuddy by lazy { ByteBuddy() }
 
-  private val stringRes = mutableSetOf<Pair<Int, String>>()
+  private val stringRes = Collections.synchronizedSet(hashSetOf<Pair<Int, String>>())
 
   private fun createContext() {
     context = byteBuddy

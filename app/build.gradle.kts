@@ -56,4 +56,5 @@ dependencies {
   implementation("androidx.annotation:annotation:1.10.0")
   implementation("com.github.iamironz:unsafe:0.0.6")
   implementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
 }

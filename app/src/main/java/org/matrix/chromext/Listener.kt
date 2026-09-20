@@ -187,9 +187,6 @@ object Listener {
         Chrome.updateTab(currentTab)
         val detail = JSONObject(payload)
         val requestFocus = detail.getBoolean("requestFocus")
-        if (frameId == null) {
-          Chrome.updateFocusedChromeXtId(detail.getString("id"))
-        }
         val activity = Chrome.getContext()
         if (requestFocus &&
             currentTab != null &&
@@ -468,23 +465,19 @@ object Listener {
           }
         }
       }
-      "registerMenuCommand" -> {
-        val data = JSONObject(payload)
-        UserScriptMenuCommand.registerMenuCommand(
-          data.getString("chromeXtId"),
-          UserScriptMenuCommand.MenuCommandItem(
-            index = data.getInt("index"),
-            title = data.getString("title"),
-            scriptName = data.getString("scriptName")
-          )
-        )
-      }
-      "unregisterMenuCommand" -> {
-        val data = JSONObject(payload)
-        UserScriptMenuCommand.unregisterMenuCommand(
-          data.getString("chromeXtId"),
-          index = data.getInt("index")
-        )
+      "updateMenuCommands" -> {
+        val data = JSONArray(payload)
+        val commands = mutableListOf<UserScriptMenuCommand.MenuCommandItem>()
+        for (i in 0 until data.length()) {
+          val item = data.getJSONObject(i)
+          commands.add(UserScriptMenuCommand.MenuCommandItem(
+            index = item.getInt("index"),
+            scriptName = item.getString("scriptName"),
+            title = item.getString("title"),
+            enabled = item.getBoolean("enabled")
+          ))
+        }
+        UserScriptMenuCommand.updateMenuCommandsForTab(currentTab, commands)
       }
     }
     return callback
