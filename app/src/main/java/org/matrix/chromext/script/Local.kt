@@ -97,17 +97,15 @@ object Local {
   val openEruda: String
   val cspRule: String
   val cosmeticFilter: String
+  val updateMenuCommands: String
+
   val key = Random.nextDouble()
   val name = randomString(25)
 
   var eruda_version: String?
 
-  val anchorInChromeXt: Int
-
   // lineNumber of the anchor in GM.js, used to verify ChromeXt.dispatch
-
-  val updateMenuCommands: String
-
+  val anchorInChromeXt: Int
   init {
     val ctx = Chrome.getContext()
     Resource.enrich(ctx)
@@ -130,36 +128,20 @@ object Local {
                 .replaceFirst("ChromeXtUnlockKeyForEruda", key.toString())
     encoding = ctx.assets.open("encoding.js").bufferedReader().use { it.readText() }
     eruda_version = getErudaVersion()
-    val localScript =
-        ctx.assets
-            .open("scripts.js")
-            .bufferedReader()
-            .use { it.readText() }
-            .split("// Kotlin separator\n\n")
 
     val seed = Random.nextDouble()
     // Use empty lines to randomize anchorInChromeXt
-    val parts =
-        localScript[0]
-            .replaceFirst("Symbol.ChromeXt", "Symbol." + name)
-            .replaceFirst("ChromeXtUnlockKeyForInit", key.toString())
+    val parts = loadScript(ctx, "scripts/initChromeXt.js")
             .split("\n")
-            .filter { if (it.length != 0) true else Random.nextDouble() > seed }
+            .filter { it.isNotEmpty() || Random.nextDouble() > seed }
     anchorInChromeXt = parts.indexOfFirst { it.endsWith("// Kotlin anchor") } + 2
     initChromeXt = parts.joinToString("\n")
-    openEruda =
-        localScript[1]
-            .replaceFirst("Symbol.ChromeXt", "Symbol." + name)
-            .replaceFirst("ChromeXtUnlockKeyForEruda", key.toString())
-    cspRule = localScript[2]
-    cosmeticFilter = localScript[3]
 
-    updateMenuCommands = ctx.assets
-      .open("scripts/updateMenuCommands.js")
-      .reader()
-      .use { it.readText() }
-      .replace("PlaceHolder_name", name)
-      .replace("PlaceHolder_key", key.toString())
+    updateMenuCommands = loadScript(ctx, "scripts/updateMenuCommands.js")
+    cspRule = loadScript(ctx, "scripts/cspRule.js")
+    cosmeticFilter = loadScript(ctx, "scripts/cosmeticFilter.js")
+    openEruda = loadScript(ctx, "scripts/openEruda.js")
+
   }
 
   fun getErudaVersion(ctx: Context = Chrome.getContext(), versionText: String? = null): String? {
@@ -176,5 +158,14 @@ object Local {
       }
     }
     return null
+  }
+
+  private fun loadScript(context: Context, path: String): String {
+    return context.assets
+      .open(path)
+      .reader()
+      .use { it.readText() }
+      .replace("PlaceHolder_name", name)
+      .replace("PlaceHolder_key", key.toString())
   }
 }

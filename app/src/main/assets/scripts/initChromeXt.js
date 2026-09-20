@@ -1,7 +1,7 @@
 "use strict";
 
-if (typeof Symbol.ChromeXt == "undefined") {
-  const initKey = ChromeXtUnlockKeyForInit;
+if (typeof Symbol.PlaceHolder_name == "undefined") {
+  const initKey = PlaceHolder_key;
   // Used to lock and unlock ChromeXt;
 
   const id =
@@ -327,57 +327,4 @@ if (typeof Symbol.ChromeXt == "undefined") {
   Symbol.ChromeXt = ChromeXt;
 } else {
   throw Error("ChromeXt is already defined, cancel initialization");
-}
-// Kotlin separator
-
-try {
-  if (eruda._isInit) {
-    eruda.hide();
-    eruda.destroy();
-  } else {
-    eruda.init();
-    eruda.show();
-  }
-} catch (e) {
-  if (typeof define == "function") define.amd = false;
-  Symbol.ChromeXt.unlock(ChromeXtUnlockKeyForEruda).dispatch("loadEruda");
-}
-// Kotlin separator
-
-if (Symbol.ChromeXt.cspRules.length > 0) {
-  Symbol.ChromeXt.cspRules.forEach((rule) => {
-    if (rule.length == 0) return;
-    // Skip empty cspRules
-    const meta = document.createElement("meta");
-    meta.setAttribute("http-equiv", "Content-Security-Policy");
-    meta.setAttribute("content", rule);
-    try {
-      document.head.append(meta);
-    } catch {
-      setTimeout(() => {
-        document.head.append(meta);
-      }, 0);
-    }
-  });
-}
-// Kotlin separator
-
-if (Symbol.ChromeXt.filters.length > 0) {
-  const filter = Symbol.ChromeXt.filters.join(", ");
-  let GM_addStyle = (css) => {
-    const style = document.createElement("style");
-    style.textContent = css;
-    if (document.head) {
-      document.head.appendChild(style);
-    } else {
-      setTimeout(() => document.head.appendChild(style));
-    }
-  };
-  GM_addStyle(filter + " {display: none !important;}");
-  window.addEventListener("load", () => {
-    document.querySelectorAll(filter).forEach((node) => {
-      node.hidden = true;
-      node.style.display = "none";
-    });
-  });
 }

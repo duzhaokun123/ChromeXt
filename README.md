@@ -14,3 +14,4 @@ o0kam1 fork 的 ChromeXt
 
 - `org.matrix.chromext.Listener` 明确区分 `js -> kotlin` `kotlin -> kotlin` 事件
   - 也许需要改为内部广播
+- 移除所有 key uuid 类似字段不是 string 的诡异代码
