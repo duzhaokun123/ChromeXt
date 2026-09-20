@@ -250,7 +250,7 @@ if (typeof Symbol.ChromeXt == "undefined") {
         if (!this.#confirmAction(action)) throw error;
       }
       // Kotlin anchor
-      this.#debug(backup.stringify({ action, payload, key: initKey }));
+      this.#debug(backup.stringify({ action, payload, key: initKey, id: this.#id }));
     }
     isLocked(throwError = false) {
       const locked = this.#locked === true && secure.description == "verified";

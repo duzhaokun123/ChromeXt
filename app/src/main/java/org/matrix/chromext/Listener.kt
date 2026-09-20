@@ -116,8 +116,9 @@ object Listener {
           val action = data.getString("action")
           val key = data.getDouble("key")
           val payload = data.optString("payload")
+          val id = data.getString("id")
           if (checkPermisson(action, key, currentTab)) {
-            val callback = on(action, payload, currentTab, auxObject, frameId)
+            val callback = on(action, payload, currentTab, auxObject, frameId, id)
             if (callback != null) Chrome.evaluateJavascript(listOf(callback), currentTab, frameId)
           }
         }
@@ -129,7 +130,8 @@ object Listener {
       payload: String = "",
       currentTab: Any? = null,
       auxObject: Any? = null,
-      frameId: String? = null
+      frameId: String? = null,
+      id: String? = null
   ): String? {
     var callback: String? = null
     when (action) {
