@@ -55,6 +55,6 @@ dependencies {
   implementation("net.bytebuddy:byte-buddy-android:1.18.14")
   implementation("androidx.annotation:annotation:1.11.0")
   implementation("com.github.iamironz:unsafe:0.0.6")
-  implementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
+  implementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.2")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
 }
