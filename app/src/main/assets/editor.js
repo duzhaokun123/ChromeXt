@@ -82,11 +82,8 @@ function fixDialog() {
   yes.textContent = "Confirm";
   yes.addEventListener("click", () => installScript(true));
   const no = document.createElement("button");
-  no.addEventListener("click", () => {
-    dialog.close();
-    setTimeout(() => dialog.show(), 30000);
-  });
-  no.textContent = "Ask 30s later";
+  no.addEventListener("click", () => dialog.close());
+  no.textContent = "Cancel";
   div.append(yes);
   div.append(no);
   dialog.append(text);
