@@ -7,6 +7,7 @@ import java.net.URL
 import kotlin.text.Regex
 import org.json.JSONObject
 import org.matrix.chromext.Chrome
+import org.matrix.chromext.db.Script
 
 private val blocksReg =
     Regex(
@@ -77,15 +78,15 @@ fun parseScript(input: String, storage: String? = null): Script? {
     Chrome.IO.submit { script.require.forEach { runCatching { lib.add(downloadLib(it)) } } }
     val parsed =
         Script(
-            script.namespace + ":" + script.name,
-            script.match.toTypedArray(),
-            script.grant.toTypedArray(),
-            script.exclude.toTypedArray(),
-            script.meta,
-            script.code,
-            script.storage,
-            lib,
-            script.noframes)
+            id = script.namespace + ":" + script.name,
+            match = script.match,
+            grant =  script.grant,
+            exclude =  script.exclude,
+            meta =  script.meta,
+            code =  script.code,
+            storage =  script.storage,
+            lib =  lib,
+            noframes =  script.noframes)
     return parsed
   }
 }

@@ -1,15 +1,15 @@
 package org.matrix.chromext.script
 
-import android.content.ContentValues
 import android.content.Context
-import android.database.AbstractWindowedCursor
-import android.database.CursorWindow
 import android.net.Uri
-import android.os.Build
+import androidx.room3.Room
+import androidx.sqlite.driver.AndroidSQLiteDriver
+import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
 import org.matrix.chromext.Chrome
-import org.matrix.chromext.utils.Log
+import org.matrix.chromext.db.ChromeXtDatabase
+import org.matrix.chromext.db.Script
 import org.matrix.chromext.utils.invokeMethod
 import org.matrix.chromext.utils.isChromeXtFrontEnd
 import org.matrix.chromext.utils.isDevToolsFrontEnd
@@ -21,11 +21,13 @@ import org.matrix.chromext.utils.shouldBypassSandbox
 
 object ScriptDbManager {
 
-  val scripts = query()
+  val scripts: MutableList<Script>
   val cosmeticFilters: MutableMap<String, String>
   val userAgents: MutableMap<String, String>
   val cspRules: MutableMap<String, String>
   var keepStorage: Boolean
+
+  val db: ChromeXtDatabase
 
   init {
     val ctx = Chrome.getContext()
@@ -44,34 +46,25 @@ object ScriptDbManager {
 
     keepStorage =
         ctx.getSharedPreferences("ChromeXt", Context.MODE_PRIVATE).getBoolean("keep_storage", true)
+
+    db = Room.databaseBuilder<ChromeXtDatabase>(ctx, "ChromeXt")
+      .setDriver(AndroidSQLiteDriver())
+      .build()
+
+    scripts = runBlocking { db.scriptDao().getAll() }
+      .mapNotNull { (_, meta, code, storage) -> parseScript(meta + code, storage.toString()) }
+      .toMutableList()
   }
 
   fun insert(vararg script: Script) {
-    val dbHelper = ScriptDbHelper(Chrome.getContext())
-    val db = dbHelper.writableDatabase
-    script.forEach {
-      val lines = db.delete("script", "id = ?", arrayOf(it.id))
-      if (lines > 0) {
-        val id = it.id
-        Log.d("Update ${lines} rows with id ${id}")
-        if (keepStorage) it.storage = scripts.find { it.id == id }?.storage
+    if (keepStorage) {
+      script.forEach { script ->
+        script.storage = scripts.find { it.id == script.id }?.storage ?: JSONObject()
       }
-      val values =
-          ContentValues().apply {
-            put("id", it.id)
-            put("code", it.code)
-            put("meta", it.meta)
-            if (it.storage != null) {
-              put("storage", it.storage.toString())
-            }
-          }
-      runCatching { db.insertOrThrow("script", null, values) }
-          .onFailure {
-            Log.e("Fail to store script ${values.getAsString("id")} into SQL database.")
-            Log.ex(it)
-          }
     }
-    dbHelper.close()
+    runBlocking {
+      db.scriptDao().upsert(*script)
+    }
   }
 
   private fun fixEncoding(url: String, path: String, codes: MutableList<String>) {
@@ -172,46 +165,8 @@ object ScriptDbManager {
   }
 
   fun updateScriptStorage() {
-    val dbHelper = ScriptDbHelper(Chrome.getContext())
-    val db = dbHelper.writableDatabase
-    scripts.forEach {
-      if (it.storage != null) {
-        val values = ContentValues().apply { put("storage", it.storage.toString()) }
-        if (db.update("script", values, "id = ?", arrayOf(it.id)).toString() == "-1") {
-          Log.e("Updating scriptStorage failed for: " + it.id)
-        } else {
-          Log.d("ScriptStorage updated for " + it.id)
-        }
-      }
+    runBlocking {
+      db.scriptDao().upsert(scripts)
     }
-    dbHelper.close()
-  }
-
-  private fun query(
-      selection: String? = null,
-      selectionArgs: Array<String>? = null,
-  ): MutableList<Script> {
-    val dbHelper = ScriptDbHelper(Chrome.getContext())
-    val db = dbHelper.readableDatabase
-    val cursor = db.query("script", null, selection, selectionArgs, null, null, null)
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      (cursor as AbstractWindowedCursor).setWindow(CursorWindow("max", 1024 * 1024 * 10.toLong()))
-    }
-    val quried_scripts = mutableListOf<Script>()
-    with(cursor) {
-      while (moveToNext()) {
-        val id = getString(getColumnIndexOrThrow("id"))
-        val meta = getString(getColumnIndexOrThrow("meta"))
-        val code = getString(getColumnIndexOrThrow("code"))
-        val storage = getString(getColumnIndexOrThrow("storage"))
-        val script = parseScript(meta + code, storage)
-        if (script != null && script.id == id) {
-          quried_scripts.add(script)
-        }
-      }
-    }
-    cursor.close()
-    dbHelper.close()
-    return quried_scripts
   }
 }

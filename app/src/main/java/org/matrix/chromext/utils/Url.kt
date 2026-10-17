@@ -4,7 +4,7 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import kotlin.text.Regex
 import org.matrix.chromext.Chrome
-import org.matrix.chromext.script.Script
+import org.matrix.chromext.db.Script
 
 const val ERUD_URL = "https://cdn.jsdelivr.net/npm/eruda"
 private const val DEV_FRONT_END = "https://chrome-devtools-frontend.appspot.com"

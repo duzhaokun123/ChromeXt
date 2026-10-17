@@ -9,6 +9,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.matrix.chromext.Chrome
 import org.matrix.chromext.Resource
+import org.matrix.chromext.db.Script
 import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.randomString
 
@@ -34,8 +35,8 @@ object GM {
   }
 
   fun bootstrap(
-      script: Script,
-      codes: MutableList<String> = mutableListOf<String>(),
+    script: Script,
+    codes: MutableList<String> = mutableListOf<String>(),
   ): MutableList<String> {
     var code = script.code
     var grants = ""

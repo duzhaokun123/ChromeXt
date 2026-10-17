@@ -204,7 +204,7 @@ object PreferenceProxy {
                     file.delete()
                     Local.eruda_version = null
                   }
-                  ctx.deleteDatabase("userscript")
+                  ctx.deleteDatabase("ChromeXt")
                   Log.toast(ctx, "ChromeXt data are reset")
                 })
 

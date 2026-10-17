@@ -14,6 +14,7 @@ import android.graphics.BitmapFactory
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Handler
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.FileReader
 import java.net.HttpURLConnection
@@ -28,7 +29,6 @@ import org.matrix.chromext.extension.LocalFiles
 import org.matrix.chromext.hook.UserScriptHook
 import org.matrix.chromext.proxy.UserScriptProxy
 import org.matrix.chromext.script.Local
-import org.matrix.chromext.script.ScriptDbHelper
 import org.matrix.chromext.script.ScriptDbManager
 import org.matrix.chromext.script.parseScript
 import org.matrix.chromext.utils.ERUD_URL
@@ -401,9 +401,11 @@ object Listener {
             val newScript =
                 parseScript(data.getString("meta") + script.code, script.storage?.toString())
             if (newScript != null) {
-              ScriptDbManager.insert(newScript)
-              ScriptDbManager.scripts.remove(script)
-              ScriptDbManager.scripts.add(newScript)
+              runBlocking {
+                ScriptDbManager.db.scriptDao().upsert(newScript)
+                ScriptDbManager.scripts.remove(script)
+                ScriptDbManager.scripts.add(newScript)
+              }
             } else {
               callback = "alert('Fail to update script metadata');"
             }
@@ -412,11 +414,10 @@ object Listener {
             val ids = Array(jsonArray.length()) { jsonArray.getString(it) }
             val scripts = ScriptDbManager.scripts.filter { ids.contains(it.id) }
             if (data.optBoolean("delete")) {
-              val dbHelper = ScriptDbHelper(Chrome.getContext())
-              val db = dbHelper.writableDatabase
-              db.delete("script", "id = ?", ids)
-              ScriptDbManager.scripts.removeAll(scripts)
-              dbHelper.close()
+              runBlocking {
+                ScriptDbManager.db.scriptDao().deleteById(*ids)
+                ScriptDbManager.scripts.removeAll(scripts)
+              }
             } else {
               val result = JSONArray(scripts.map { it.meta })
               callback = "ChromeXt.post('script_meta', ${result});"
