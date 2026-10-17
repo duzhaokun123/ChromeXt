@@ -1,18 +1,19 @@
-package org.matrix.chromext
+package org.matrix.chromext.ui
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
 import android.widget.BaseAdapter
 import android.widget.Button
 import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toolbar
-import android.widget.WrapperListAdapter
 import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -20,6 +21,8 @@ import androidx.core.view.updatePadding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import org.matrix.chromext.R
+import org.matrix.chromext.Resource
 import org.matrix.chromext.db.entity.Script
 import org.matrix.chromext.script.RuntimeScript
 import org.matrix.chromext.script.ScriptDbManager
@@ -87,14 +90,37 @@ class ScriptManagerActivity : Activity(),
                 updateScriptInfo()
               }.show()
           }
+          view.findViewById<Button>(R.id.btn_edit).setOnClickListener {
+            startActivity(
+              Intent(
+                this@ScriptManagerActivity,
+                ScriptConfigActivity::class.java
+              ).apply {
+                putExtra("id", script.id)
+              })
+          }
 
           return view
         }
-
       }
 
     ViewCompat.setOnApplyWindowInsetsListener(window.decorView, this)
     updateScriptInfo()
+  }
+
+  override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+    menuInflater.inflate(R.menu.menu_script_manager, menu)
+    return super.onCreateOptionsMenu(menu)
+  }
+
+  override fun onMenuItemSelected(featureId: Int, item: MenuItem): Boolean {
+    when(item.itemId) {
+      R.id.reflash -> {
+        updateScriptInfo()
+        return true
+      }
+    }
+    return super.onMenuItemSelected(featureId, item)
   }
 
   override fun onApplyWindowInsets(
