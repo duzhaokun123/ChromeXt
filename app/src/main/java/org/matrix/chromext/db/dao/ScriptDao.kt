@@ -1,9 +1,10 @@
-package org.matrix.chromext.db
+package org.matrix.chromext.db.dao
 
 import androidx.room3.Dao
 import androidx.room3.Query
 import androidx.room3.Upsert
 import org.json.JSONObject
+import org.matrix.chromext.db.entity.Script
 
 @Dao
 interface ScriptDao {
@@ -21,4 +22,7 @@ interface ScriptDao {
 
   @Query("UPDATE Script SET storage = :storage WHERE id = :id")
   suspend fun updateStorage(id: String, storage: JSONObject)
+
+  @Query("UPDATE Script SET meta = :meta WHERE id = :id")
+  suspend fun updateMeta(id: String, meta: String)
 }

@@ -7,14 +7,13 @@ import java.net.URL
 import kotlin.text.Regex
 import org.json.JSONObject
 import org.matrix.chromext.Chrome
-import org.matrix.chromext.db.Script
 
 private val blocksReg =
     Regex(
         """(?<metablock>[\S\s]*?// ==UserScript==\r?\n[\S\s]*?\r?\n// ==/UserScript==\s+)(?<code>[\S\s]*)""")
 private val metaReg = Regex("""^//\s+@(?<key>[\w-]+)(\s+(?<value>.+))?""")
 
-fun parseScript(input: String, storage: String? = null): Script? {
+fun parseScript(input: String, storage: String? = null): RuntimeScript? {
   val blockMatchGroup = blocksReg.matchEntire(input)?.groups
   if (blockMatchGroup == null) {
     return null
@@ -77,7 +76,7 @@ fun parseScript(input: String, storage: String? = null): Script? {
     val lib = mutableListOf<String>()
     Chrome.IO.submit { script.require.forEach { runCatching { lib.add(downloadLib(it)) } } }
     val parsed =
-        Script(
+      RuntimeScript(
             id = script.namespace + ":" + script.name,
             match = script.match,
             grant =  script.grant,

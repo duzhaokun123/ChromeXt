@@ -3,13 +3,13 @@ package org.matrix.chromext.script
 import android.content.Context
 import android.net.Uri
 import androidx.room3.Room
-import androidx.sqlite.driver.AndroidSQLiteDriver
+import androidx.room3.withWriteTransaction
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
 import org.matrix.chromext.Chrome
 import org.matrix.chromext.db.ChromeXtDatabase
-import org.matrix.chromext.db.Script
+import org.matrix.chromext.db.entity.Script
 import org.matrix.chromext.utils.invokeMethod
 import org.matrix.chromext.utils.isChromeXtFrontEnd
 import org.matrix.chromext.utils.isDevToolsFrontEnd
@@ -21,11 +21,10 @@ import org.matrix.chromext.utils.shouldBypassSandbox
 
 object ScriptDbManager {
 
-  val scripts: MutableList<Script>
+  val scripts: MutableList<RuntimeScript>
   val cosmeticFilters: MutableMap<String, String>
   val userAgents: MutableMap<String, String>
   val cspRules: MutableMap<String, String>
-  var keepStorage: Boolean
 
   val db: ChromeXtDatabase
 
@@ -44,26 +43,36 @@ object ScriptDbManager {
         ctx.getSharedPreferences("CSPRule", Context.MODE_PRIVATE).getAll()
             as MutableMap<String, String>
 
-    keepStorage =
-        ctx.getSharedPreferences("ChromeXt", Context.MODE_PRIVATE).getBoolean("keep_storage", true)
-
     db = Room.databaseBuilder<ChromeXtDatabase>(ctx, "ChromeXt")
-      .setDriver(AndroidSQLiteDriver())
       .build()
 
     scripts = runBlocking { db.scriptDao().getAll() }
-      .mapNotNull { (_, meta, code, storage) -> parseScript(meta + code, storage.toString()) }
+      .mapNotNull { script ->
+        val parsedScript = parseScript(ScriptFileStorage.getScript(script.id) ?: "", null) ?: return@mapNotNull null
+        return@mapNotNull parseScript(script.meta + parsedScript.code, script.storage.toString())
+          ?.copy(id = script.id)
+      }
       .toMutableList()
   }
 
-  fun insert(vararg script: Script) {
-    if (keepStorage) {
-      script.forEach { script ->
-        script.storage = scripts.find { it.id == script.id }?.storage ?: JSONObject()
+  fun insert(vararg script: RuntimeScript) {
+    script.forEach { script ->
+      ScriptFileStorage.putScript(script.id, script.meta + script.code)
+      runBlocking {
+        db.scriptDao().upsert(
+          Script(
+            id = script.id,
+            meta = script.meta,
+            storage = scripts.find { it.id == script.id }?.storage ?: JSONObject()
+          )
+        )
       }
     }
+  }
+
+  fun updateScriptMeta(id: String, meta: String) {
     runBlocking {
-      db.scriptDao().upsert(*script)
+      db.scriptDao().updateMeta(id, meta)
     }
   }
 
@@ -166,7 +175,19 @@ object ScriptDbManager {
 
   fun updateScriptStorage() {
     runBlocking {
-      db.scriptDao().upsert(scripts)
+      db.withWriteTransaction {
+        scripts.forEach { script ->
+          db.scriptDao().updateStorage(script.id, script.storage ?: JSONObject())
+        }
+      }
     }
+  }
+
+  fun deleteScript(vararg ids: String) {
+    runBlocking {
+      db.scriptDao().deleteById(*ids)
+    }
+    ScriptFileStorage.deleteScript(*ids)
+    scripts.removeAll { it.id in ids }
   }
 }

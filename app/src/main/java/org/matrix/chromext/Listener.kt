@@ -42,6 +42,7 @@ import org.matrix.chromext.utils.isDevToolsFrontEnd
 import org.matrix.chromext.utils.isUserScript
 import org.matrix.chromext.utils.matching
 import org.matrix.chromext.utils.parseOrigin
+import java.util.UUID
 
 object Listener {
 
@@ -195,7 +196,7 @@ object Listener {
         }
       }
       "installScript" -> {
-        val script = parseScript(payload)
+        val script = parseScript(payload)?.copy(id = UUID.randomUUID().toString())
         if (script == null) {
           callback = "alert('Invalid UserScript');"
         } else {
@@ -400,12 +401,11 @@ object Listener {
             val script = ScriptDbManager.scripts.filter { it.id == data.getString("id") }.first()
             val newScript =
                 parseScript(data.getString("meta") + script.code, script.storage?.toString())
+                  ?.copy(id = script.id)
             if (newScript != null) {
-              runBlocking {
-                ScriptDbManager.db.scriptDao().upsert(newScript)
-                ScriptDbManager.scripts.remove(script)
-                ScriptDbManager.scripts.add(newScript)
-              }
+              ScriptDbManager.updateScriptMeta(newScript.id, newScript.meta)
+              ScriptDbManager.scripts.remove(script)
+              ScriptDbManager.scripts.add(newScript)
             } else {
               callback = "alert('Fail to update script metadata');"
             }
@@ -414,10 +414,7 @@ object Listener {
             val ids = Array(jsonArray.length()) { jsonArray.getString(it) }
             val scripts = ScriptDbManager.scripts.filter { ids.contains(it.id) }
             if (data.optBoolean("delete")) {
-              runBlocking {
-                ScriptDbManager.db.scriptDao().deleteById(*ids)
-                ScriptDbManager.scripts.removeAll(scripts)
-              }
+              ScriptDbManager.deleteScript(*ids)
             } else {
               val result = JSONArray(scripts.map { it.meta })
               callback = "ChromeXt.post('script_meta', ${result});"

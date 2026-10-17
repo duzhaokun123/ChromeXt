@@ -4,7 +4,7 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import kotlin.text.Regex
 import org.matrix.chromext.Chrome
-import org.matrix.chromext.db.Script
+import org.matrix.chromext.script.RuntimeScript
 
 const val ERUD_URL = "https://cdn.jsdelivr.net/npm/eruda"
 private const val DEV_FRONT_END = "https://chrome-devtools-frontend.appspot.com"
@@ -50,7 +50,7 @@ private fun urlMatch(match: String, url: String, strict: Boolean): Boolean {
   return false
 }
 
-fun matching(script: Script, url: String): Boolean {
+fun matching(script: RuntimeScript, url: String): Boolean {
   script.exclude.forEach {
     if (urlMatch(it, url, true)) {
       return false

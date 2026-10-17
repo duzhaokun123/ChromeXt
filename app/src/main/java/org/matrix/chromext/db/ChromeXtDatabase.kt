@@ -3,6 +3,8 @@ package org.matrix.chromext.db
 import androidx.room3.ColumnTypeConverters
 import androidx.room3.Database
 import androidx.room3.RoomDatabase
+import org.matrix.chromext.db.dao.ScriptDao
+import org.matrix.chromext.db.entity.Script
 
 @Database(entities = [Script::class], version = 1)
 @ColumnTypeConverters(Converters::class)

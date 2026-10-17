@@ -18,11 +18,6 @@ found in the LICENSE file.
 		android:title="Browser gesture navigation"
 		android:summaryOn="Block system gesture in the middle of right edge"
 		android:summaryOff="No support for history forward" />
-	<org.chromium.components.browser_ui.settings.ChromeSwitchPreference
-		android:key="keep_storage"
-		android:title="Persistent UserScript storages"
-		android:summaryOn="Keep storage data after update / re-installation"
-		android:summaryOff="Wipe storage data after update / re-installation" />
 	<Preference
 		android:key="bookmark"
 		android:title="Export bookmarks"
