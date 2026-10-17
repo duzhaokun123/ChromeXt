@@ -190,4 +190,10 @@ object ScriptDbManager {
     ScriptFileStorage.deleteScript(*ids)
     scripts.removeAll { it.id in ids }
   }
+
+  fun getAllScript(): List<Script> {
+    return runBlocking {
+      db.scriptDao().getAll()
+    }
+  }
 }

@@ -47,4 +47,16 @@ object ScriptFileStorage {
       file.delete()
     }
   }
+
+  fun getScriptSize(id: String): Long {
+    runCatching {
+      val file = storagePath.resolve("$id.user.js")
+      if (file.exists()) {
+        return file.length()
+      }
+    }.onFailure { e ->
+      Log.e("getScriptSize $id failed", e)
+    }
+    return -1
+  }
 }
