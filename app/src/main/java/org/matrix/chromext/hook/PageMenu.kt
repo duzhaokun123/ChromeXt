@@ -1,14 +1,18 @@
 package org.matrix.chromext.hook
 
 import android.content.Context
+import android.content.Intent
 import android.content.res.Resources
 import android.os.Bundle
 import android.view.View
+import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.net.toUri
 import chromium.AppMenuHandler
 import de.robv.android.xposed.XC_MethodHook.Unhook
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.lang.reflect.Modifier
 import java.util.ArrayList
@@ -16,6 +20,7 @@ import org.matrix.chromext.Chrome
 import org.matrix.chromext.Listener
 import org.matrix.chromext.R
 import org.matrix.chromext.Resource
+import org.matrix.chromext.devtools.getInspectPages
 import org.matrix.chromext.proxy.PageMenuProxy
 import org.matrix.chromext.proxy.UserScriptProxy
 import org.matrix.chromext.script.Local
@@ -93,6 +98,39 @@ object PageMenuHook : BaseHook() {
         }
         "org.matrix.chromext:id/eruda_console_id" ->
             UserScriptProxy.evaluateJavascript(Local.openEruda)
+        "org.matrix.chromext:id/devtools" -> {
+          GlobalScope.launch(Dispatchers.IO) {
+            val pages = getInspectPages()
+            if (pages == null) {
+              withContext(Dispatchers.Main) {
+                Log.toast(ctx, "can't inspect")
+              }
+            } else {
+              val id = Chrome.getTabId(null)
+              val page = pages.toList().find { page ->
+                page.get("id").toString() == id
+              }
+              if (page == null) {
+                withContext(Dispatchers.Main) {
+                  Log.toast(ctx, "page not found")
+                }
+              } else {
+                val devtoolsFrontendUrl = page.getString("devtoolsFrontendUrl").toUri()
+                val intent = CustomTabsIntent.Builder()
+                  .setUrlBarHidingEnabled(true)
+                  .setShowTitle(true)
+                  .build().intent
+                intent.apply {
+                  setData(devtoolsFrontendUrl)
+                  setPackage(Chrome.packageName)
+                  addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                  addFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT)
+                }
+                ctx.startActivity(intent)
+              }
+            }
+          }
+        }
         "${ctx.packageName}:id/reload_menu_id" -> {
           val isLoading = proxy.mIsLoading.get(Chrome.getTab()) as Boolean
           if (!isLoading) return Listener.on("userAgentSpoof", getUrl()) != null
@@ -241,6 +279,16 @@ object PageMenuHook : BaseHook() {
             false
           )
 
+          val devtoolsItem = buildModelForStandardMenuItem.invoke(
+            it.thisObject,
+            mContext,
+            mAppMenuItemTheme,
+            R.id.devtools,
+            R.string.main_menu_devtools,
+            R.drawable.code_24px,
+            false
+          )
+
           val menusToAdd = mutableListOf<Any>()
 
           val itemConstuctor = MVCListAdapter_ListItem.declaredConstructors[0]
@@ -250,6 +298,9 @@ object PageMenuHook : BaseHook() {
           } else {
             menusToAdd.add(
                 itemConstuctor.newInstance(erudaItem, AppMenuItemType.STANDARD.value))
+            menusToAdd.add(
+              itemConstuctor.newInstance(devtoolsItem, AppMenuItemType.STANDARD.value)
+            )
             menusToAdd.add(createUserScriptMenus(itemConstuctor, mAppMenuItemTheme, currentTab))
           }
 

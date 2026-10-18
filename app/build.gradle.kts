@@ -63,4 +63,5 @@ dependencies {
   implementation("androidx.core:core-ktx:1.19.1")
   implementation("io.ktor:ktor-client-core:3.6.0")
   implementation("io.ktor:ktor-client-android:3.6.0")
+  implementation("androidx.browser:browser:1.10.0")
 }
