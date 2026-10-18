@@ -220,8 +220,9 @@ object ScriptDbManager {
         }
         meta += "\n// ==/UserScript==\n\n"
         val storage = runBlocking { db.scriptStorageDao().getById(script.id) } ?: JSONObject()
-        return@mapNotNull parseScript(meta + code, storage.toString())
-          ?.copy(id = script.id)
+        val runtimeScript =
+          parseScript(meta + code, uuid = script.uuid.toString(), storage = storage.toString())
+        return@mapNotNull runtimeScript?.copy(id = script.id)
       }
       .toMutableList()
   }

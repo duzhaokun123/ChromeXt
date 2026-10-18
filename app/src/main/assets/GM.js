@@ -1133,13 +1133,13 @@ GM.bootstrap = () => {
     GM.globalThis = new Proxy(window, handler);
   }
 
-  GM_info.uuid = Math.random();
+  // GM_info.uuid is injected by Kotlin (stable Script.uuid)
   const storageHandler = {
     storage: GM_info.storage || {},
     broadcast: grants.includes("GM_addValueChangeListener"),
     payload: {
       id: meta.id,
-      uuid: GM_info.uuid,
+      instanceId: Math.random(),
     },
     cache: new Set(),
     sync(data) {
@@ -1176,7 +1176,7 @@ GM.bootstrap = () => {
       this.sync({ key, id, broadcast: false });
       return promiseListenerFactory(
         "scriptSyncValue",
-        GM_info.uuid,
+        this.payload.instanceId,
         meta.id,
         (data, resolve, _reject) => {
           if (data.value == undefined) data.value = default_value;
@@ -1195,14 +1195,14 @@ GM.bootstrap = () => {
       e.stopImmediatePropagation();
       const data = e.detail.data;
       if ("key" in data && data.key in GM_info.storage) {
-        if (e.detail.uuid == GM_info.uuid && e.detail.broadcast !== true)
+        if (e.detail.instanceId == storageHandler.payload.instanceId && e.detail.broadcast !== true)
           return;
         GM_info.valueListener.forEach((v) => {
           if (v.enabled == true && v.key == data.key) {
             v.listener(
               GM_info.storage[data.key] || null,
               data.value,
-              e.detail.uuid != GM_info.uuid
+              e.detail.instanceId != storageHandler.payload.instanceId
             );
           }
         });
@@ -1246,14 +1246,14 @@ GM.bootstrap = () => {
 
   function promiseListenerFactory(
     event,
-    uuid,
+    instanceId,
     id = meta.id,
     listener = (_data, resolve, _reject) => resolve(true),
     closeCondition = () => true
   ) {
     return new Promise((resolve, reject) => {
       const tmpListener = (e) => {
-        if (e.detail.id == id && e.detail.uuid == uuid) {
+        if (e.detail.id == id && e.detail.instanceId == instanceId) {
           e.stopImmediatePropagation();
           const data = e.detail.data || null;
           if (closeCondition(data)) {

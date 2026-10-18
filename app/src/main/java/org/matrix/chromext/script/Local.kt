@@ -79,6 +79,7 @@ object GM {
     grants += localScript.get("GM.bootstrap")!!
     val GM_info = JSONObject(mapOf("scriptMetaStr" to script.meta))
     GM_info.put("script", JSONObject().put("id", script.id))
+    GM_info.put("uuid", script.uuid)
     if (script.storage != null) GM_info.put("storage", script.storage)
     code = "\ndelete window.__loading__;\n${code};"
     code = localScript.get("globalThis")!! + script.lib.joinToString("\n") + code

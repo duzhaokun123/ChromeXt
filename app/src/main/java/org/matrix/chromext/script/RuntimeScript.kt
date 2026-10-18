@@ -5,6 +5,7 @@ import java.util.Locale
 
 data class RuntimeScript(
   val id: String,
+  val uuid: String,
   val meta: String,
   val code: String,
   var storage: JSONObject?,
