@@ -10,6 +10,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.matrix.chromext.Chrome
 import org.matrix.chromext.ui.ScriptConfigActivity
+import org.matrix.chromext.ui.ScriptInstallActivity
 import org.matrix.chromext.ui.ScriptManagerActivity
 import org.matrix.chromext.MainHook as AppMainHook
 import org.matrix.chromext.R as AppR
@@ -85,7 +86,8 @@ object ParasiticsStub {
 
     private val moduleActivity = listOf(
       ScriptManagerActivity::class.java,
-      ScriptConfigActivity::class.java
+      ScriptConfigActivity::class.java,
+      ScriptInstallActivity::class.java,
     ).map { it.name }
 
     @JvmStatic

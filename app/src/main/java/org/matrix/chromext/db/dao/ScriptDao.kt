@@ -3,8 +3,8 @@ package org.matrix.chromext.db.dao
 import androidx.room3.Dao
 import androidx.room3.Query
 import androidx.room3.Upsert
-import org.json.JSONObject
 import org.matrix.chromext.db.entity.Script
+import java.util.UUID
 
 @Dao
 interface ScriptDao {
@@ -22,6 +22,9 @@ interface ScriptDao {
 
   @Query("DELETE FROM Script WHERE id In (:id)")
   suspend fun deleteById(vararg id: String)
+
+  @Query("DELETE FROM Script WHERE uuid in (:uuid)")
+  suspend fun deleteByUUID(vararg uuid: UUID)
 
   @Query("UPDATE Script SET meta = :meta WHERE id = :id")
   suspend fun updateMeta(id: String, meta: String)

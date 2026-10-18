@@ -44,7 +44,7 @@
                 android:id="@+id/et_userMatch"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:autofillHints="@null"
+                android:importantForAutofill="no"
                 android:inputType="textMultiLine"
                 android:maxLines="4" />
 
@@ -59,7 +59,7 @@
                 android:id="@+id/et_userInclude"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:autofillHints="@null"
+                android:importantForAutofill="no"
                 android:inputType="textMultiLine"
                 android:maxLines="4" />
 
@@ -74,7 +74,7 @@
                 android:id="@+id/et_userExclude"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:autofillHints="@null"
+                android:importantForAutofill="no"
                 android:inputType="textMultiLine"
                 android:maxLines="4" />
 
@@ -89,7 +89,7 @@
                 android:id="@+id/et_userConnect"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:autofillHints="@null"
+                android:importantForAutofill="no"
                 android:inputType="textMultiLine"
                 android:maxLines="4" />
         </LinearLayout>

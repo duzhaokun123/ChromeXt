@@ -14,7 +14,6 @@ import android.graphics.BitmapFactory
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Handler
-import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.FileReader
 import java.net.HttpURLConnection
@@ -31,6 +30,7 @@ import org.matrix.chromext.proxy.UserScriptProxy
 import org.matrix.chromext.script.Local
 import org.matrix.chromext.script.ScriptDbManager
 import org.matrix.chromext.script.parseScript
+import org.matrix.chromext.ui.ScriptInstallActivity
 import org.matrix.chromext.utils.ERUD_URL
 import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.UserScriptMenuCommand
@@ -42,7 +42,7 @@ import org.matrix.chromext.utils.isDevToolsFrontEnd
 import org.matrix.chromext.utils.isUserScript
 import org.matrix.chromext.utils.matching
 import org.matrix.chromext.utils.parseOrigin
-import java.util.UUID
+import androidx.core.net.toUri
 
 object Listener {
 
@@ -196,16 +196,15 @@ object Listener {
         }
       }
       "installScript" -> {
-        val script = parseScript(payload)?.copy(id = UUID.randomUUID().toString())
-        if (script == null) {
-          callback = "alert('Invalid UserScript');"
-        } else {
-          Log.i("Install script ${script.id}")
-          ScriptDbManager.apply {
-            insert(script)
-            scripts.removeAll(scripts.filter { it.id == script.id })
-            scripts.add(script)
-          }
+        val url = payload
+        Log.i("Install script from $url")
+        runCatching {
+          val context = Chrome.getContext()
+          context.startActivity(Intent(context, ScriptInstallActivity::class.java).apply {
+            data = url.toUri()
+          })
+        }.onFailure { e ->
+          Log.ex(e)
         }
       }
       "notification" -> {

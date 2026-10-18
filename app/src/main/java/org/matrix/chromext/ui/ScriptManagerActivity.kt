@@ -77,18 +77,19 @@ class ScriptManagerActivity : Activity(),
 
           val (script, metadata, fileSize) = installScripts[position]
 
-          view.findViewById<TextView>(R.id.tv_name).text = metadata.name
+          view.findViewById<TextView>(R.id.tv_name).text = metadata.localeName
           view.findViewById<TextView>(R.id.tv_info).text = """
             |version: ${metadata.version}
             |author: ${metadata.author}
             |id: ${script.id}
+            |uuid: ${script.uuid}
             |fileSize: ${if (fileSize != -1L) fileSize else "file lost!"}
             |
-            |${metadata.description}
+            |${metadata.localeDescription}
           """.trimMargin()
           view.findViewById<Button>(R.id.btn_delete).setOnClickListener {
             AlertDialog.Builder(this@ScriptManagerActivity)
-              .setTitle("Delete ${metadata.name} ?")
+              .setTitle("Delete ${metadata.localeName} ?")
               .setNegativeButton(android.R.string.cancel, null)
               .setPositiveButton(android.R.string.ok) { _, _ ->
                 ScriptDbManager.deleteScript(script.id)
@@ -122,6 +123,10 @@ class ScriptManagerActivity : Activity(),
     when(item.itemId) {
       R.id.reflash -> {
         updateScriptInfo()
+        return true
+      }
+      R.id.install -> {
+        startActivity(Intent(this, ScriptInstallActivity::class.java))
         return true
       }
     }

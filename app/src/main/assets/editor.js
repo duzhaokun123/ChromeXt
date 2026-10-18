@@ -9,8 +9,7 @@ async function installScript(force = false) {
     dialog.showModal();
   } else {
     dialog.close();
-    const script = document.body.innerText;
-    Symbol.ChromeXt.dispatch("installScript", script);
+    Symbol.ChromeXt.dispatch("installScript", document.URL);
   }
 }
 

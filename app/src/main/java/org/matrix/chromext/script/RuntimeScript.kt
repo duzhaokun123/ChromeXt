@@ -1,6 +1,7 @@
 package org.matrix.chromext.script
 
 import org.json.JSONObject
+import java.util.Locale
 
 data class RuntimeScript(
   val id: String,
@@ -23,13 +24,25 @@ data class ScriptMetadata(
   val connect: List<String>,
   val raw: List<Pair<String, String?>>
 ) {
-  val name get() = findMetadata("name")
-  val description get() = findMetadata("description")
-  val author get() = findMetadata("author")
-  val version get() = findMetadata("version")
+  val id get() = "$namespace:$name"
+  val name get() = getMetadata("name")
+  val namespace get() = getMetadata("namespace")
+  val description get() = getMetadata("description")
+  val author get() = getMetadata("author")
+  val version get() = getMetadata("version")
 
-  fun findMetadata(key: String): String? {
+  val localeName get() = getLocaleMetadata("name")
+  val localeDescription get() = getLocaleMetadata("description")
+
+  fun getMetadata(key: String): String? {
     return raw.find { it.first == key }?.second
+  }
+
+  fun getLocaleMetadata(key: String, locale: Locale? = null): String? {
+    val locale = locale ?: Locale.getDefault()
+    return getMetadata("$key:${locale.language}-${locale.country}")
+      ?: getMetadata("$key:${locale.language}")
+      ?: getMetadata(key)
   }
 
   fun hasMetadata(key: String): Boolean {

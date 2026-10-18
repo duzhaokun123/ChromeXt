@@ -2,11 +2,14 @@ package org.matrix.chromext.db.entity
 
 import androidx.room3.Entity
 import androidx.room3.PrimaryKey
+import java.util.UUID
 
 @Entity
 data class Script(
   @PrimaryKey
+  // namespace:name
   val id: String,
+  val uuid: UUID,
   val meta: String,
 //  var enabled: Boolean = true,
   var userRunAt: RunAt = RunAt.UNSET,

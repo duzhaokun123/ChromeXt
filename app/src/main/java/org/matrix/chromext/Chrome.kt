@@ -8,6 +8,8 @@ import android.net.Uri
 import android.net.http.HttpResponseCache
 import android.os.Build
 import android.os.Handler
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpTimeout
 import java.io.File
 import java.io.FileReader
 import java.lang.ref.WeakReference
@@ -45,6 +47,14 @@ object Chrome {
   @OptIn(DexKitExperimentalApi::class)
   val dexKitBridge: DexKitCacheBridge.RecyclableBridge
     get() = DexKitCacheBridge.create("$packageName:$version:${BuildConfig.BUILD_TIME}", getContext().applicationContext.classLoader)
+  val httpClient by lazy {
+    HttpClient {
+      expectSuccess = true
+      install(HttpTimeout) {
+        requestTimeoutMillis = 10_000
+      }
+    }
+  }
 
   fun init(ctx: Context, packageName: String? = null) {
     val initialized = mContext != null

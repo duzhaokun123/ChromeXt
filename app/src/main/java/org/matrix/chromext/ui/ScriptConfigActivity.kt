@@ -60,7 +60,7 @@ class ScriptConfigActivity : Activity(), OnApplyWindowInsetsListener {
     }
 
     metadata = ScriptParser.parseMetadata(script?.meta!!)
-    setTitle(metadata.name ?: scriptId)
+    setTitle(metadata.localeName ?: scriptId)
 
     sp_userRunAt.adapter = ArrayAdapter(
       this,

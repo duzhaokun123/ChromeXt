@@ -3,7 +3,6 @@ package org.matrix.chromext.script
 import android.content.Context
 import android.net.Uri
 import androidx.room3.Room
-import androidx.room3.withWriteTransaction
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
@@ -11,7 +10,6 @@ import org.matrix.chromext.Chrome
 import org.matrix.chromext.db.ChromeXtDatabase
 import org.matrix.chromext.db.entity.Script
 import org.matrix.chromext.db.entity.ScriptStorage
-import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.ScriptParser
 import org.matrix.chromext.utils.invokeMethod
 import org.matrix.chromext.utils.isChromeXtFrontEnd
@@ -21,10 +19,12 @@ import org.matrix.chromext.utils.matching
 import org.matrix.chromext.utils.parseOrigin
 import org.matrix.chromext.utils.resolveContentUrl
 import org.matrix.chromext.utils.shouldBypassSandbox
+import java.util.UUID
 
 object ScriptDbManager {
-
-  val scripts: MutableList<RuntimeScript>
+  // HACK! should not keep old code's Script
+  var scripts: MutableList<RuntimeScript>
+    private set
   val cosmeticFilters: MutableMap<String, String>
   val userAgents: MutableMap<String, String>
   val cspRules: MutableMap<String, String>
@@ -49,46 +49,31 @@ object ScriptDbManager {
     db = Room.databaseBuilder<ChromeXtDatabase>(ctx, "ChromeXt")
       .build()
 
-    scripts = runBlocking { db.scriptDao().getAll() }
-      .mapNotNull { script ->
-        val scriptFile = ScriptFileStorage.getScript(script.id) ?: return@mapNotNull null
-        val (_, code) = ScriptParser.splitScript(scriptFile) ?: return@mapNotNull null
-        // HACK! should replace old parser
-        var meta = script.meta.replace("// ==/UserScript==", "") +
-            script.userMatch.split("\n").filter { it.isNotBlank() }.joinToString("\n","\n") { "// @match $it" } +
-            script.userInclude.split("\n").filter { it.isNotBlank() }.joinToString("\n", "\n") { "// @include $it" } +
-            script.userExclude.split("\n").filter { it.isNotBlank() }.joinToString("\n", "\n") { "// @exclude $it" } +
-            script.userConnect.split("\n").filter { it.isNotBlank() }.joinToString("\n", "\n") { "// @connect $it" }
-        if (script.userRunAt != Script.RunAt.UNSET) {
-          meta = meta.replace(Regex("""^//\s+@run-at\s+.+$""", RegexOption.MULTILINE), "") +
-              "\n// @run-at ${script.userRunAt.value}\n"
-        }
-        meta += "\n// ==/UserScript==\n\n"
-        val storage = runBlocking { db.scriptStorageDao().getById(script.id) } ?: JSONObject()
-        return@mapNotNull parseScript(meta + code, storage.toString())
-          ?.copy(id = script.id)
-      }
-      .toMutableList()
-  }
-
-  fun insert(vararg script: RuntimeScript) {
-    script.forEach { script ->
-      ScriptFileStorage.putScript(script.id, script.meta + script.code)
-      runBlocking {
-        db.scriptDao().upsert(
-          Script(
-            id = script.id,
-            meta = script.meta,
-          )
-        )
-      }
-    }
+    scripts = loadRuntimeScript()
   }
 
   fun upsert(vararg script: Script) {
     runBlocking {
       db.scriptDao().upsert(*script)
     }
+    scripts = loadRuntimeScript()
+  }
+
+  fun upsertScriptFile(scriptFile: String): Boolean {
+    val (metaString, _) = ScriptParser.splitScript(scriptFile) ?: return false
+    val metadata = ScriptParser.parseMetadata(metaString ?: return false)
+    val success = ScriptFileStorage.putScript(metadata.id, scriptFile)
+    if (!success) {
+      return false
+    }
+    runBlocking {
+      val script = db.scriptDao().getById(metadata.id)
+        ?.copy(meta = metaString)
+        ?: Script(metadata.id, UUID.randomUUID(), metaString)
+      db.scriptDao().upsert(script)
+    }
+    scripts = loadRuntimeScript()
+    return true
   }
 
   fun updateScriptMeta(id: String, meta: String) {
@@ -209,7 +194,7 @@ object ScriptDbManager {
       db.scriptStorageDao().deleteById(*ids)
     }
     ScriptFileStorage.deleteScript(*ids)
-    scripts.removeAll { it.id in ids }
+    scripts = loadRuntimeScript()
   }
 
   fun getAllScript(): List<Script> {
@@ -222,5 +207,29 @@ object ScriptDbManager {
     return runBlocking {
       db.scriptDao().getById(id)
     }
+  }
+
+  // HACK! should split script and storage
+  private fun loadRuntimeScript(): MutableList<RuntimeScript> {
+     return runBlocking { db.scriptDao().getAll() }
+      .mapNotNull { script ->
+        val scriptFile = ScriptFileStorage.getScript(script.id) ?: return@mapNotNull null
+        val (_, code) = ScriptParser.splitScript(scriptFile) ?: return@mapNotNull null
+        // HACK! should replace old parser
+        var meta = script.meta.replace("// ==/UserScript==", "") +
+            script.userMatch.split("\n").filter { it.isNotBlank() }.joinToString("\n","\n") { "// @match $it" } +
+            script.userInclude.split("\n").filter { it.isNotBlank() }.joinToString("\n", "\n") { "// @include $it" } +
+            script.userExclude.split("\n").filter { it.isNotBlank() }.joinToString("\n", "\n") { "// @exclude $it" } +
+            script.userConnect.split("\n").filter { it.isNotBlank() }.joinToString("\n", "\n") { "// @connect $it" }
+        if (script.userRunAt != Script.RunAt.UNSET) {
+          meta = meta.replace(Regex("""^//\s+@run-at\s+.+$""", RegexOption.MULTILINE), "") +
+              "\n// @run-at ${script.userRunAt.value}\n"
+        }
+        meta += "\n// ==/UserScript==\n\n"
+        val storage = runBlocking { db.scriptStorageDao().getById(script.id) } ?: JSONObject()
+        return@mapNotNull parseScript(meta + code, storage.toString())
+          ?.copy(id = script.id)
+      }
+      .toMutableList()
   }
 }

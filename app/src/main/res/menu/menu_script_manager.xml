@@ -4,4 +4,8 @@
         android:id="@+id/reflash"
         android:title="reflash"
         android:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/install"
+        android:title="install"
+        android:showAsAction="ifRoom"/>
 </menu>

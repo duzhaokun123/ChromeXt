@@ -14,7 +14,7 @@ object ScriptParser {
     val raw = metadata.split("\n")
       .mapNotNull { line ->
         val metaMatchGroup =
-          Regex("""^//\s+@(?<key>[\w-]+)(\s+(?<value>.+))?""").matchEntire(line)?.groups
+          Regex("""^//\s+@(?<key>[\w-:]+)(\s+(?<value>.+))?""").matchEntire(line)?.groups
             ?: return@mapNotNull null
         val key = metaMatchGroup[1]?.value ?: return@mapNotNull null
         val value = if (metaMatchGroup[2] != null) metaMatchGroup[3]?.value else null
@@ -50,5 +50,10 @@ object ScriptParser {
         .matchEntire(input)?.groups
     if (blockMatchGroup == null) return null
     return blockMatchGroup[1]?.value to blockMatchGroup[2]?.value
+  }
+
+  fun parseScriptMetadata(input: String): ScriptMetadata? {
+    val (metadata, _) = splitScript(input) ?: return null
+    return parseMetadata(metadata ?: return null)
   }
 }
