@@ -11,6 +11,9 @@ interface ScriptDao {
   @Query("SELECT * FROM Script")
   suspend fun getAll(): List<Script>
 
+  @Query("SELECT * FROM Script WHERE id = :id")
+  suspend fun getById(id: String): Script?
+
   @Upsert
   suspend fun upsert(vararg script: Script)
 
@@ -19,9 +22,6 @@ interface ScriptDao {
 
   @Query("DELETE FROM Script WHERE id In (:id)")
   suspend fun deleteById(vararg id: String)
-
-  @Query("UPDATE Script SET storage = :storage WHERE id = :id")
-  suspend fun updateStorage(id: String, storage: JSONObject)
 
   @Query("UPDATE Script SET meta = :meta WHERE id = :id")
   suspend fun updateMeta(id: String, meta: String)

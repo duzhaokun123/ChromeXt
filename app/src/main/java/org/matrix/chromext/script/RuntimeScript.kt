@@ -20,6 +20,7 @@ data class ScriptMetadata(
   val exclude: List<String>,
   val grant: List<String>,
   val require: List<String>,
+  val connect: List<String>,
   val raw: List<Pair<String, String?>>
 ) {
   val name get() = findMetadata("name")

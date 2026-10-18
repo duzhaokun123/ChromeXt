@@ -10,6 +10,9 @@ import org.json.JSONObject
 import org.matrix.chromext.Chrome
 import org.matrix.chromext.db.ChromeXtDatabase
 import org.matrix.chromext.db.entity.Script
+import org.matrix.chromext.db.entity.ScriptStorage
+import org.matrix.chromext.utils.Log
+import org.matrix.chromext.utils.ScriptParser
 import org.matrix.chromext.utils.invokeMethod
 import org.matrix.chromext.utils.isChromeXtFrontEnd
 import org.matrix.chromext.utils.isDevToolsFrontEnd
@@ -48,8 +51,21 @@ object ScriptDbManager {
 
     scripts = runBlocking { db.scriptDao().getAll() }
       .mapNotNull { script ->
-        val parsedScript = parseScript(ScriptFileStorage.getScript(script.id) ?: "", null) ?: return@mapNotNull null
-        return@mapNotNull parseScript(script.meta + parsedScript.code, script.storage.toString())
+        val scriptFile = ScriptFileStorage.getScript(script.id) ?: return@mapNotNull null
+        val (_, code) = ScriptParser.splitScript(scriptFile) ?: return@mapNotNull null
+        // HACK! should replace old parser
+        var meta = script.meta.replace("// ==/UserScript==", "") +
+            script.userMatch.split("\n").filter { it.isNotBlank() }.joinToString("\n","\n") { "// @match $it" } +
+            script.userInclude.split("\n").filter { it.isNotBlank() }.joinToString("\n", "\n") { "// @include $it" } +
+            script.userExclude.split("\n").filter { it.isNotBlank() }.joinToString("\n", "\n") { "// @exclude $it" } +
+            script.userConnect.split("\n").filter { it.isNotBlank() }.joinToString("\n", "\n") { "// @connect $it" }
+        if (script.userRunAt != Script.RunAt.UNSET) {
+          meta = meta.replace(Regex("""^//\s+@run-at\s+.+$""", RegexOption.MULTILINE), "") +
+              "\n// @run-at ${script.userRunAt.value}\n"
+        }
+        meta += "\n// ==/UserScript==\n\n"
+        val storage = runBlocking { db.scriptStorageDao().getById(script.id) } ?: JSONObject()
+        return@mapNotNull parseScript(meta + code, storage.toString())
           ?.copy(id = script.id)
       }
       .toMutableList()
@@ -63,10 +79,15 @@ object ScriptDbManager {
           Script(
             id = script.id,
             meta = script.meta,
-            storage = scripts.find { it.id == script.id }?.storage ?: JSONObject()
           )
         )
       }
+    }
+  }
+
+  fun upsert(vararg script: Script) {
+    runBlocking {
+      db.scriptDao().upsert(*script)
     }
   }
 
@@ -175,17 +196,17 @@ object ScriptDbManager {
 
   fun updateScriptStorage() {
     runBlocking {
-      db.withWriteTransaction {
-        scripts.forEach { script ->
-          db.scriptDao().updateStorage(script.id, script.storage ?: JSONObject())
-        }
-      }
+      db.scriptStorageDao().upsert(
+      scripts.map {
+        ScriptStorage(it.id, it.storage ?: JSONObject())
+      })
     }
   }
 
   fun deleteScript(vararg ids: String) {
     runBlocking {
       db.scriptDao().deleteById(*ids)
+      db.scriptStorageDao().deleteById(*ids)
     }
     ScriptFileStorage.deleteScript(*ids)
     scripts.removeAll { it.id in ids }
@@ -194,6 +215,12 @@ object ScriptDbManager {
   fun getAllScript(): List<Script> {
     return runBlocking {
       db.scriptDao().getAll()
+    }
+  }
+
+  fun getScript(id: String): Script? {
+    return runBlocking {
+      db.scriptDao().getById(id)
     }
   }
 }

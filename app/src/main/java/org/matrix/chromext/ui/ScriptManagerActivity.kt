@@ -54,6 +54,11 @@ class ScriptManagerActivity : Activity(),
     setActionBar(toolbar)
     setTitle("Script Manager")
 
+    tv_info.text = """
+      |loading...
+      |(if it keep loading, database broken, try reset ChromeXt)
+    """.trimMargin()
+
     lv_scripts.adapter =
       object : BaseAdapter() {
         override fun getCount() = installScripts.size

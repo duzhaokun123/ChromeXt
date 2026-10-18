@@ -29,4 +29,12 @@
         android:textColor="?android:colorError"
         android:text="delete" />
 
+    <Button
+        android:id="@+id/btn_edit"
+        style="@android:style/Widget.DeviceDefault.Button.Borderless"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toStartOf="@id/btn_delete"
+        android:text="edit" />
+
 </RelativeLayout>

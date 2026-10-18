@@ -58,8 +58,7 @@ dependencies {
   implementation("com.github.iamironz:unsafe:0.0.6")
   implementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.2")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
-  val room_version = "3.0.3"
-  implementation("androidx.room3:room3-runtime:$room_version")
-  ksp("androidx.room3:room3-compiler:$room_version")
+  implementation("androidx.room3:room3-runtime:3.0.3")
+  ksp("androidx.room3:room3-compiler:3.0.3")
   implementation("androidx.core:core-ktx:1.19.1")
 }

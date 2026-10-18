@@ -9,6 +9,8 @@ object ScriptParser {
     val exclude = mutableListOf<String>()
     val grant = mutableListOf<String>()
     val require = mutableListOf<String>()
+    val connect = mutableListOf<String>()
+
     val raw = metadata.split("\n")
       .mapNotNull { line ->
         val metaMatchGroup =
@@ -23,6 +25,7 @@ object ScriptParser {
             "exclude" -> exclude.add(value)
             "grant" -> grant.add(value)
             "require" -> require.add(value)
+            "connect" -> connect.add(value)
           }
         }
         return@mapNotNull key to value
@@ -33,7 +36,19 @@ object ScriptParser {
       exclude = exclude,
       grant = grant,
       require = require,
+      connect = connect,
       raw = raw
     )
+  }
+
+  /**
+   * @return meta, code
+   */
+  fun splitScript(input: String): Pair<String?, String?>? {
+    val blockMatchGroup =
+      Regex("""(?<metablock>[\S\s]*?// ==UserScript==\r?\n[\S\s]*?\r?\n// ==/UserScript==\s+)(?<code>[\S\s]*)""")
+        .matchEntire(input)?.groups
+    if (blockMatchGroup == null) return null
+    return blockMatchGroup[1]?.value to blockMatchGroup[2]?.value
   }
 }

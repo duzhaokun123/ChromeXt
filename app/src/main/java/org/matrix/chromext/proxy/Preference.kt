@@ -12,7 +12,7 @@ import java.io.FileReader
 import org.json.JSONObject
 import org.matrix.chromext.Chrome
 import org.matrix.chromext.Listener
-import org.matrix.chromext.ScriptManagerActivity
+import org.matrix.chromext.ui.ScriptManagerActivity
 import org.matrix.chromext.script.Local
 import org.matrix.chromext.script.ScriptFileStorage
 import org.matrix.chromext.utils.Log

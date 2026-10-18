@@ -9,7 +9,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.matrix.chromext.Chrome
-import org.matrix.chromext.ScriptManagerActivity
+import org.matrix.chromext.ui.ScriptConfigActivity
+import org.matrix.chromext.ui.ScriptManagerActivity
 import org.matrix.chromext.MainHook as AppMainHook
 import org.matrix.chromext.R as AppR
 import org.matrix.chromext.utils.Log as AppLog
@@ -82,7 +83,10 @@ object ParasiticsStub {
 
     const val ACTIVITY_PROXY_INTENT = "chromext.ACTIVITY_PROXY_INTENT"
 
-    private val moduleActivity = listOf(ScriptManagerActivity::class.java).map { it.name }
+    private val moduleActivity = listOf(
+      ScriptManagerActivity::class.java,
+      ScriptConfigActivity::class.java
+    ).map { it.name }
 
     @JvmStatic
     fun isModuleProxyActivity(name: String): Boolean {

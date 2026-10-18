@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        tools:title="@string/app_name" />
+
+    <ScrollView
+        android:id="@+id/sv"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="User run-at:"
+                android:textAppearance="@android:style/TextAppearance.DeviceDefault.Medium"
+                android:labelFor="@id/sp_userRunAt" />
+
+            <Spinner
+                android:id="@+id/sp_userRunAt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="User match:"
+                android:textAppearance="@android:style/TextAppearance.DeviceDefault.Medium"
+                android:labelFor="@id/et_userMatch" />
+
+            <EditText
+                android:id="@+id/et_userMatch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints="@null"
+                android:inputType="textMultiLine"
+                android:maxLines="4" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="User include:"
+                android:textAppearance="@android:style/TextAppearance.DeviceDefault.Medium"
+                android:labelFor="@id/et_userInclude" />
+
+            <EditText
+                android:id="@+id/et_userInclude"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints="@null"
+                android:inputType="textMultiLine"
+                android:maxLines="4" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="User exclude:"
+                android:textAppearance="@android:style/TextAppearance.DeviceDefault.Medium"
+                android:labelFor="@id/et_userExclude" />
+
+            <EditText
+                android:id="@+id/et_userExclude"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints="@null"
+                android:inputType="textMultiLine"
+                android:maxLines="4" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="User connect:"
+                android:textAppearance="@android:style/TextAppearance.DeviceDefault.Medium"
+                android:labelFor="@id/et_userConnect" />
+
+            <EditText
+                android:id="@+id/et_userConnect"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints="@null"
+                android:inputType="textMultiLine"
+                android:maxLines="4" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
