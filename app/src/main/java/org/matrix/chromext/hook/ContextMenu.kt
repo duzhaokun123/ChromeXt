@@ -7,7 +7,6 @@ import android.view.View
 import de.robv.android.xposed.XC_MethodHook.Unhook
 import java.lang.Class
 import org.matrix.chromext.Chrome
-import org.matrix.chromext.Listener
 import org.matrix.chromext.R
 import org.matrix.chromext.Resource
 import org.matrix.chromext.script.Local
@@ -18,9 +17,7 @@ object ContextMenuHook : BaseHook() {
   val erudaMenuId = 31415926
 
   private fun openEruda(url: String) {
-    if (isChromeXtFrontEnd(url)) {
-      Listener.on("inspectPages")
-    } else if (isUserScript(url)) {
+    if (isUserScript(url)) {
       val sandBoxed = shouldBypassSandbox(url)
       Chrome.evaluateJavascript(listOf("Symbol.installScript(true);"), null, null, sandBoxed)
     } else {
@@ -49,9 +46,8 @@ object ContextMenuHook : BaseHook() {
           if (menu.findItem(erudaMenuId) != null) return@hookAfter
           Resource.enrich(Chrome.getContext())
           val titleId =
-              if (isChromeXtFrontEnd(url)) R.string.main_menu_developer_tools
-              else if (isUserScript(url)) R.string.main_menu_install_script
-              else R.string.main_menu_eruda_console
+            if (isUserScript(url)) R.string.main_menu_install_script
+            else R.string.main_menu_eruda_console
           val erudaMenu = menu.add(titleId)
           val mId = erudaMenu::class.java.getDeclaredField("mId")
           mId.setAccessible(true)

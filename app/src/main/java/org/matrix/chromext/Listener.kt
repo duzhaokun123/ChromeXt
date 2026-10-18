@@ -22,14 +22,11 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.matrix.chromext.devtools.DevSessions
 import org.matrix.chromext.devtools.DevToolClient
-import org.matrix.chromext.devtools.getInspectPages
 import org.matrix.chromext.devtools.hitDevTools
-import org.matrix.chromext.extension.LocalFiles
 import org.matrix.chromext.hook.UserScriptHook
 import org.matrix.chromext.proxy.UserScriptProxy
 import org.matrix.chromext.script.Local
 import org.matrix.chromext.script.ScriptDbManager
-import org.matrix.chromext.script.parseScript
 import org.matrix.chromext.ui.ScriptInstallActivity
 import org.matrix.chromext.utils.ERUD_URL
 import org.matrix.chromext.utils.Log
@@ -37,7 +34,6 @@ import org.matrix.chromext.utils.UserScriptMenuCommand
 import org.matrix.chromext.utils.XMLHttpRequest
 import org.matrix.chromext.utils.findMethod
 import org.matrix.chromext.utils.invalidUserScriptUrls
-import org.matrix.chromext.utils.isChromeXtFrontEnd
 import org.matrix.chromext.utils.isDevToolsFrontEnd
 import org.matrix.chromext.utils.isUserScript
 import org.matrix.chromext.utils.matching
@@ -50,7 +46,6 @@ object Listener {
   val allowedActions =
       mapOf(
           "userscript" to listOf("block", "installScript"),
-          "front-end" to listOf("inspect_pages", "userscript", "extension"),
           "devtools" to listOf("websocket"),
       )
   val tabNotification = mutableMapOf<Int, Any>()
@@ -82,7 +77,6 @@ object Listener {
     val url = Chrome.getUrl(tab)!!
     if (url.endsWith(".txt")) return false
     if (isUserScript(url) && !allowedActions.get("userscript")!!.contains(action)) return false
-    if (allowedActions.get("front-end")!!.contains(action) && !isChromeXtFrontEnd(url)) return false
     if (allowedActions.get("devtools")!!.contains(action) && !isDevToolsFrontEnd(url)) return false
     return true
   }
@@ -380,55 +374,6 @@ object Listener {
               "cspRules" -> syncSharedPreference(payload, "CSPRule", ScriptDbManager.cspRules)
               else -> null
             }
-      }
-      "inspectPages" -> {
-        Chrome.IO.submit {
-          val code = "ChromeXt.post('inspect_pages', ${getInspectPages()});"
-          Handler(Chrome.getContext().mainLooper).post {
-            Chrome.evaluateJavascript(listOf(code), currentTab, frameId)
-          }
-        }
-      }
-      "userscript" -> {
-        if (payload == "") {
-          val detail = JSONObject(mapOf("type" to "init"))
-          detail.put("ids", JSONArray(ScriptDbManager.scripts.map { it.id }))
-          callback = "ChromeXt.post('userscript', ${detail});"
-        } else {
-          val data = JSONObject(payload)
-          if (data.has("meta")) {
-            val script = ScriptDbManager.scripts.filter { it.id == data.getString("id") }.first()
-            val newScript =
-                parseScript(data.getString("meta") + script.code, script.storage?.toString())
-                  ?.copy(id = script.id)
-            if (newScript != null) {
-              ScriptDbManager.updateScriptMeta(newScript.id, newScript.meta)
-              ScriptDbManager.scripts.remove(script)
-              ScriptDbManager.scripts.add(newScript)
-            } else {
-              callback = "alert('Fail to update script metadata');"
-            }
-          } else if (data.has("ids")) {
-            val jsonArray = data.getJSONArray("ids")
-            val ids = Array(jsonArray.length()) { jsonArray.getString(it) }
-            val scripts = ScriptDbManager.scripts.filter { ids.contains(it.id) }
-            if (data.optBoolean("delete")) {
-              ScriptDbManager.deleteScript(*ids)
-            } else {
-              val result = JSONArray(scripts.map { it.meta })
-              callback = "ChromeXt.post('script_meta', ${result});"
-            }
-          }
-        }
-      }
-      "extension" -> {
-        if (payload == "") {
-          if (BuildConfig.DEBUG) {
-            callback = "ChromeXt.post('extension', ${LocalFiles.start()});"
-          } else {
-            Log.toast(Chrome.getContext(), "Work in progress, might be ready in the future :)")
-          }
-        }
       }
       "websocket" -> {
         val detail = JSONObject(payload)

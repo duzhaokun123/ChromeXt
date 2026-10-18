@@ -99,15 +99,6 @@ fun resolveContentUrl(url: String): String {
   return ""
 }
 
-private val trustedHosts =
-    listOf("jingmatrix.github.io", "jianyu-ma.onrender.com", "jianyu-ma.netlify.app")
-
-fun isChromeXtFrontEnd(url: String?): Boolean {
-  if (url == null || !url.endsWith("/ChromeXt/")) return false
-  trustedHosts.forEach { if (url == "https://" + it + "/ChromeXt/") return true }
-  return false
-}
-
 private val sandboxHosts = listOf("raw.githubusercontent.com", "gist.githubusercontent.com")
 
 fun shouldBypassSandbox(url: String?): Boolean {

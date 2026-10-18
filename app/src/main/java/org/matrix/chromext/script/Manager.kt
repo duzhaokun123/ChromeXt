@@ -12,7 +12,6 @@ import org.matrix.chromext.db.entity.Script
 import org.matrix.chromext.db.entity.ScriptStorage
 import org.matrix.chromext.utils.ScriptParser
 import org.matrix.chromext.utils.invokeMethod
-import org.matrix.chromext.utils.isChromeXtFrontEnd
 import org.matrix.chromext.utils.isDevToolsFrontEnd
 import org.matrix.chromext.utils.isUserScript
 import org.matrix.chromext.utils.matching
@@ -76,12 +75,6 @@ object ScriptDbManager {
     return true
   }
 
-  fun updateScriptMeta(id: String, meta: String) {
-    runBlocking {
-      db.scriptDao().updateMeta(id, meta)
-    }
-  }
-
   private fun fixEncoding(url: String, path: String, codes: MutableList<String>) {
     if (path.endsWith(".js") || path.endsWith(".txt")) {
       // Fix encoding for local text files
@@ -122,7 +115,7 @@ object ScriptDbManager {
     } else if (isDevToolsFrontEnd(url)) {
       codes.add(Local.customizeDevTool)
       webSettings?.invokeMethod(null) { name == "setUserAgentString" }
-    } else if (!isChromeXtFrontEnd(url)) {
+    } else {
       val origin = parseOrigin(url)
       if (origin != null) {
         if (cspRules.contains(origin)) {

@@ -87,14 +87,10 @@ object PageMenuHook : BaseHook() {
       }
 
       when (ctx.resources.getResourceName(id)) {
-        "org.matrix.chromext:id/extension_id" -> {
-          Listener.on("extension")
-        }
         "org.matrix.chromext:id/install_script_id" -> {
           val sandBoxed = shouldBypassSandbox(getUrl())
           Chrome.evaluateJavascript(listOf("Symbol.installScript(true);"), null, null, sandBoxed)
         }
-        "org.matrix.chromext:id/developer_tools_id" -> Listener.on("inspectPages")
         "org.matrix.chromext:id/eruda_console_id" ->
             UserScriptProxy.evaluateJavascript(Local.openEruda)
         "${ctx.packageName}:id/reload_menu_id" -> {
@@ -225,55 +221,35 @@ object PageMenuHook : BaseHook() {
           val mContext = field_AppMenuPropertiesDelegateImpl_mContext.get(it.thisObject)
           val mAppMenuItemTheme = field_AppMenuPropertiesDelegateImpl_mAppMenuItemTheme.get(it.thisObject)
 
-          val localMenus =
-              listOf(
-                  buildModelForStandardMenuItem.invoke(
-                      it.thisObject,
-                      mContext,
-                      mAppMenuItemTheme,
-                      R.id.developer_tools_id,
-                      R.string.main_menu_developer_tools,
-                      R.drawable.ic_devtools,
-                      false),
-                  buildModelForStandardMenuItem.invoke(
-                      it.thisObject,
-                      mContext,
-                      mAppMenuItemTheme,
-                      R.id.extension_id,
-                      R.string.main_menu_extension,
-                      R.drawable.ic_extension,
-                      false),
-                  buildModelForStandardMenuItem.invoke(
-                      it.thisObject,
-                      mContext,
-                      mAppMenuItemTheme,
-                      R.id.install_script_id,
-                      R.string.main_menu_install_script,
-                      R.drawable.ic_install_script,
-                      false),
-                  buildModelForStandardMenuItem.invoke(
-                      it.thisObject,
-                      mContext,
-                      mAppMenuItemTheme,
-                      R.id.eruda_console_id,
-                      R.string.main_menu_eruda_console,
-                      R.drawable.ic_devtools,
-                      false))
+          val installScriptItem = buildModelForStandardMenuItem.invoke(
+            it.thisObject,
+            mContext,
+            mAppMenuItemTheme,
+            R.id.install_script_id,
+            R.string.main_menu_install_script,
+            R.drawable.ic_install_script,
+            false
+          )
+
+          val erudaItem = buildModelForStandardMenuItem.invoke(
+            it.thisObject,
+            mContext,
+            mAppMenuItemTheme,
+            R.id.eruda_console_id,
+            R.string.main_menu_eruda_console,
+            R.drawable.ic_devtools,
+            false
+          )
 
           val menusToAdd = mutableListOf<Any>()
 
           val itemConstuctor = MVCListAdapter_ListItem.declaredConstructors[0]
-          if (isChromeXtFrontEnd(url)) {
+          if (isUserScript(url)) {
             menusToAdd.add(
-                itemConstuctor.newInstance(localMenus[0], AppMenuItemType.STANDARD.value))
-            menusToAdd.add(
-                itemConstuctor.newInstance(localMenus[1], AppMenuItemType.STANDARD.value))
-          } else if (isUserScript(url)) {
-            menusToAdd.add(
-                itemConstuctor.newInstance(localMenus[2], AppMenuItemType.STANDARD.value))
+                itemConstuctor.newInstance(installScriptItem, AppMenuItemType.STANDARD.value))
           } else {
             menusToAdd.add(
-                itemConstuctor.newInstance(localMenus[3], AppMenuItemType.STANDARD.value))
+                itemConstuctor.newInstance(erudaItem, AppMenuItemType.STANDARD.value))
             menusToAdd.add(createUserScriptMenus(itemConstuctor, mAppMenuItemTheme, currentTab))
           }
 
