@@ -23,7 +23,6 @@ import org.json.JSONObject
 import org.matrix.chromext.devtools.DevSessions
 import org.matrix.chromext.devtools.DevToolClient
 import org.matrix.chromext.devtools.hitDevTools
-import org.matrix.chromext.hook.UserScriptHook
 import org.matrix.chromext.proxy.UserScriptProxy
 import org.matrix.chromext.script.Local
 import org.matrix.chromext.script.ScriptDbManager
@@ -315,15 +314,6 @@ object Listener {
           client.command(null, method, params)
         }
       }
-      "userAgentSpoof" -> {
-        if (UserScriptHook.isInit) {
-          val loadUrlParams = UserScriptProxy.newLoadUrlParams(payload)
-          if (UserScriptProxy.userAgentHook(payload, loadUrlParams)) {
-            UserScriptProxy.loadUrl.invoke(Chrome.getTab(), loadUrlParams)
-            callback = "console.log('User-Agent spoofed');"
-          }
-        }
-      }
       "loadEruda" -> {
         val ctx = Chrome.getContext()
         val eruda = File(ctx.filesDir, "Eruda.js")
@@ -368,7 +358,6 @@ object Listener {
             when (type) {
               "filters" ->
                   syncSharedPreference(payload, "CosmeticFilter", ScriptDbManager.cosmeticFilters)
-              "userAgent" -> syncSharedPreference(payload, "UserAgent", ScriptDbManager.userAgents)
               "cspRules" -> syncSharedPreference(payload, "CSPRule", ScriptDbManager.cspRules)
               else -> null
             }

@@ -17,7 +17,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.lang.reflect.Modifier
 import java.util.ArrayList
 import org.matrix.chromext.Chrome
-import org.matrix.chromext.Listener
 import org.matrix.chromext.R
 import org.matrix.chromext.Resource
 import org.matrix.chromext.devtools.getInspectPages
@@ -130,10 +129,6 @@ object PageMenuHook : BaseHook() {
               }
             }
           }
-        }
-        "${ctx.packageName}:id/reload_menu_id" -> {
-          val isLoading = proxy.mIsLoading.get(Chrome.getTab()) as Boolean
-          if (!isLoading) return Listener.on("userAgentSpoof", getUrl()) != null
         }
       }
       return false

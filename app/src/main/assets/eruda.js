@@ -405,17 +405,12 @@ eruda.Info = class extends eruda.Info {
     );
     super._addDefInfo();
     delete this._infos["Backers"];
-    this._infos["User Agent"].cls = {
-      li: "user-agent",
-      span: ["save", "reset"],
-    };
     this._infos["About"].val = `<div class="${c("check-update")}">Eruda v${
       eruda.version
     }</div>`;
     this._infos = Object.entries(this._infos).map(([k, v]) => {
       return { name: k, ...v };
     });
-    this._infos.splice(2, 2, this._infos[3], this._infos[2]);
     this._render();
     if (ChromeXt.cspRules.length > 0)
       this._$el.find(".eruda-csp-rules > div")[0].contentEditable = true;
@@ -440,24 +435,7 @@ eruda.Info = class extends eruda.Info {
   }
   _bindEvent() {
     super._bindEvent();
-    this._$el.find(".eruda-user-agent > div")[0].contentEditable = true;
     this._$el
-      .on("click", ".eruda-user-agent .eruda-icon-save", (e) => {
-        this._container.notify("User-Agent config saved");
-        e.stopPropagation();
-        ChromeXt.dispatch("syncData", {
-          origin: window.location.origin,
-          name: "userAgent",
-          data: this._$el.find(".eruda-user-agent > div").text(),
-        });
-      })
-      .on("click", ".eruda-user-agent .eruda-icon-reset", (_e) => {
-        this._container.notify("User-Agent restored");
-        ChromeXt.dispatch("syncData", {
-          origin: window.location.origin,
-          name: "userAgent",
-        });
-      })
       .on("click", ".eruda-csp-rules .eruda-icon-add", (_e) => {
         this._$el.find(".eruda-csp-rules > h2 > span")[0].className =
           c("icon-save save");

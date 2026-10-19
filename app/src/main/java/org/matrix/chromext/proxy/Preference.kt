@@ -184,7 +184,7 @@ object PreferenceProxy {
                     reset_confirming += 1
                     return
                   }
-                  arrayOf("ChromeXt", "CosmeticFilter", "UserAgent", "CSPRule").forEach {
+                  arrayOf("ChromeXt", "CosmeticFilter", "CSPRule").forEach {
                     with(ctx.getSharedPreferences(it, Context.MODE_PRIVATE).edit()) {
                       clear()
                       apply()

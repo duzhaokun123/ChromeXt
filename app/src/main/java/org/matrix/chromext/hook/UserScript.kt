@@ -67,15 +67,6 @@ object UserScriptHook : BaseHook() {
           }
         }
 
-    findMethod(proxy.navigationControllerImpl) {
-          name == "loadUrl" || parameterTypes contentDeepEquals arrayOf(proxy.loadUrlParams)
-        }
-        // public void loadUrl(LoadUrlParams params)
-        .hookBefore {
-          val url = proxy.parseUrl(it.args[0])!!
-          proxy.userAgentHook(url, it.args[0])
-        }
-
     findMethod(proxy.chromeTabbedActivity, true) { name == "onResume" }
         .hookBefore { Chrome.init(it.thisObject as Context) }
 

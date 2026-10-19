@@ -137,21 +137,10 @@ h2.eruda-title {
   white-space: pre-wrap;
   margin-right: 3em;
 }
-#eruda-info .eruda-user-agent > h2 > span.eruda-reset {
-  position: relative;
-  top: 35px;
-  left: 20.5px;
-}
 #eruda-info .eruda-userscripts > h2 > span.eruda-icon-eye {
   position: relative;
   right: 10px;
 }
-#eruda-info .eruda-user-agent > div.eruda-content {
-  text-wrap: balance;
-  text-align: center;
-  margin-right: 3em;
-}
-#eruda-info .eruda-user-agent h2,
 #eruda-info .eruda-csp-rules h2 {
   padding-bottom: 12px;
 }

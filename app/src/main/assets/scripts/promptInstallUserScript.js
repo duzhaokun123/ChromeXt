@@ -1,7 +1,7 @@
 try {
-  const preparePromptInstallScript = (name, key) => {
+  const preparePromptInstallScript = () => {
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", () => preparePromptInstallScript(name, key));
+      document.addEventListener("DOMContentLoaded", preparePromptInstallScript);
       return;
     }
 
@@ -33,7 +33,7 @@ try {
     yes.addEventListener("click", (event) => {
       dialog.close();
       if (!event.isTrusted) return;
-      Symbol[name].unlock(key).dispatch("installScript", document.URL);
+      Symbol['PlaceHolder_name'].unlock(PlaceHolder_key).dispatch("installScript", document.URL);
     })
     no.textContent = "No";
     no.addEventListener("click", () => {
@@ -44,7 +44,7 @@ try {
     document.body.append(dialog);
     dialog.showModal();
   }
-  preparePromptInstallScript('PlaceHolder_name', PlaceHolder_key);
+  preparePromptInstallScript();
 } catch (e) {
   console.error(e);
 }

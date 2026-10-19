@@ -3,12 +3,10 @@ package org.matrix.chromext.proxy
 import android.net.Uri
 import org.luckypray.dexkit.annotations.DexKitExperimentalApi
 import org.matrix.chromext.Chrome
-import org.matrix.chromext.script.ScriptDbManager
 import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.findField
 import org.matrix.chromext.utils.findMethod
 import org.matrix.chromext.utils.findMethodOrNull
-import org.matrix.chromext.utils.parseOrigin
 
 object UserScriptProxy {
   // It is possible to do a HTTP POST with LoadUrlParams Class
@@ -21,8 +19,8 @@ object UserScriptProxy {
   // val tabModelJniBridge = Chrome.load("org.chromium.chrome.browser.tabmodel.TabModelJniBridge")
   val tabWebContentsDelegateAndroidImpl =
       Chrome.load("org.chromium.chrome.browser.tab.TabWebContentsDelegateAndroidImpl")
-  val navigationControllerImpl =
-      Chrome.load("org.chromium.content.browser.framehost.NavigationControllerImpl")
+//  val navigationControllerImpl =
+//      Chrome.load("org.chromium.content.browser.framehost.NavigationControllerImpl")
   val chromeTabbedActivity =
       Chrome.load("org.chromium.chrome.browser.ChromeTabbedActivity")
   val tabImpl =
@@ -112,20 +110,5 @@ object UserScriptProxy {
     }
     Log.e("parseUrl: ${packed::class.java} is not ${loadUrlParams.name} nor ${gURL.name}")
     return null
-  }
-
-  fun userAgentHook(url: String, urlParams: Any): Boolean {
-    val origin = parseOrigin(url)
-    if (origin != null) {
-      // Log.d("Change User-Agent header: ${origin}")
-      if (ScriptDbManager.userAgents.contains(origin)) {
-        val header = "user-agent: ${ScriptDbManager.userAgents.get(origin)}\r\n"
-        val mVerbatimHeaders =
-            loadUrlParams.declaredFields.filter { it.type == String::class.java }[1]
-        mVerbatimHeaders.set(urlParams, header)
-        return true
-      }
-    }
-    return false
   }
 }

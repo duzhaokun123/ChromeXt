@@ -24,7 +24,6 @@ object ScriptDbManager {
   var scripts: MutableList<RuntimeScript>
     private set
   val cosmeticFilters: MutableMap<String, String>
-  val userAgents: MutableMap<String, String>
   val cspRules: MutableMap<String, String>
 
   val db: ChromeXtDatabase
@@ -34,10 +33,6 @@ object ScriptDbManager {
     @Suppress("UNCHECKED_CAST")
     cosmeticFilters =
         ctx.getSharedPreferences("CosmeticFilter", Context.MODE_PRIVATE).getAll()
-            as MutableMap<String, String>
-    @Suppress("UNCHECKED_CAST")
-    userAgents =
-        ctx.getSharedPreferences("UserAgent", Context.MODE_PRIVATE).getAll()
             as MutableMap<String, String>
     @Suppress("UNCHECKED_CAST")
     cspRules =
@@ -108,11 +103,6 @@ object ScriptDbManager {
             val filter = JSONArray(cosmeticFilters.get(origin))
             codes.add("Symbol.ChromeXt.filters.push(...${filter});${Local.cosmeticFilter}")
           }
-        }
-        if (userAgents.contains(origin)) {
-          val agent = userAgents.get(origin)
-          codes.add("Object.defineProperties(window.navigator,{userAgent:{value:'${agent}'}});")
-          webSettings?.invokeMethod(agent) { name == "setUserAgentString" }
         }
       }
       trustedPage = false
