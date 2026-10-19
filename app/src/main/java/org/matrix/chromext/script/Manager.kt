@@ -1,7 +1,6 @@
 package org.matrix.chromext.script
 
 import android.content.Context
-import android.net.Uri
 import androidx.room3.Room
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
@@ -75,44 +74,24 @@ object ScriptDbManager {
     return true
   }
 
-  private fun fixEncoding(url: String, path: String, codes: MutableList<String>) {
-    if (path.endsWith(".js") || path.endsWith(".txt")) {
-      // Fix encoding for local text files
-      val inputStream = Chrome.getContext().contentResolver.openInputStream(Uri.parse(url))
-      val text = inputStream?.bufferedReader()?.readText()
-      if (text != null) {
-        val data = JSONObject(mapOf("utf-8" to text))
-        codes.add("window.content=${data};")
-        codes.add(Local.encoding)
-      }
-      inputStream?.close()
-    } else if (url.endsWith(".js") || url.endsWith(".txt")) {
-      // Fix encoding for remote text files
-      codes.add(Local.encoding)
-    }
-
-    if (codes.size > 1 && (url.endsWith(".txt") || path.endsWith(".txt")))
-        codes.add("fixEncoding();")
-  }
-
   fun invokeScript(url: String, webView: Any? = null, frameId: String? = null) {
     val codes = mutableListOf<String>(Local.initChromeXt)
     val path = resolveContentUrl(url)
     val webSettings = webView?.invokeMethod { name == "getSettings" }
 
-    var trustedPage = true
+    var trustedPage: Boolean
     // Whether ChromeXt is accessible in the global context
     var runScripts = false
     // Whether UserScripts are invoked
     var bypassSandbox = false
 
-    fixEncoding(url, path, codes)
-
     if (isUserScript(url, path)) {
-      trustedPage = false
       codes.add(Local.promptInstallUserScript)
       bypassSandbox = shouldBypassSandbox(url)
-    } else if (isDevToolsFrontEnd(url)) {
+    }
+
+    if (isDevToolsFrontEnd(url)) {
+      trustedPage = true
       codes.add(Local.customizeDevTool)
       webSettings?.invokeMethod(null) { name == "setUserAgentString" }
     } else {
@@ -135,14 +114,14 @@ object ScriptDbManager {
           codes.add("Object.defineProperties(window.navigator,{userAgent:{value:'${agent}'}});")
           webSettings?.invokeMethod(agent) { name == "setUserAgentString" }
         }
-        trustedPage = false
-        runScripts = true
       }
+      trustedPage = false
+      runScripts = true
     }
 
     if (trustedPage) {
       codes.add("globalThis.ChromeXt = Symbol.ChromeXt;")
-    } else if (runScripts) {
+    } else {
       codes.add("Symbol.ChromeXt.lock(${Local.key}, '${Local.name}');")
     }
     codes.add("//# sourceURL=local://ChromeXt/init" + if (frameId == null) "" else "/" + frameId)

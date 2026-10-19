@@ -94,7 +94,7 @@ object PageMenuHook : BaseHook() {
       when (ctx.resources.getResourceName(id)) {
         "org.matrix.chromext:id/install_script_id" -> {
           val sandBoxed = shouldBypassSandbox(getUrl())
-          Chrome.evaluateJavascript(listOf("Symbol.installScript(true);"), null, null, sandBoxed)
+          Chrome.evaluateJavascript(listOf("Symbol.${Local.name}.unlock(${Local.key}).dispatch('installScript', document.URL);"), null, null, sandBoxed)
         }
         "org.matrix.chromext:id/eruda_console_id" ->
             UserScriptProxy.evaluateJavascript(Local.openEruda)
@@ -295,14 +295,13 @@ object PageMenuHook : BaseHook() {
           if (isUserScript(url)) {
             menusToAdd.add(
                 itemConstuctor.newInstance(installScriptItem, AppMenuItemType.STANDARD.value))
-          } else {
-            menusToAdd.add(
-                itemConstuctor.newInstance(erudaItem, AppMenuItemType.STANDARD.value))
-            menusToAdd.add(
-              itemConstuctor.newInstance(devtoolsItem, AppMenuItemType.STANDARD.value)
-            )
-            menusToAdd.add(createUserScriptMenus(itemConstuctor, mAppMenuItemTheme, currentTab))
           }
+          menusToAdd.add(
+              itemConstuctor.newInstance(erudaItem, AppMenuItemType.STANDARD.value))
+          menusToAdd.add(
+            itemConstuctor.newInstance(devtoolsItem, AppMenuItemType.STANDARD.value)
+          )
+          menusToAdd.add(createUserScriptMenus(itemConstuctor, mAppMenuItemTheme, currentTab))
 
           val injectPosition =
               menuModels

@@ -12,6 +12,7 @@ import org.matrix.chromext.Resource
 import org.matrix.chromext.db.entity.Script
 import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.randomString
+import kotlin.io.encoding.Base64
 
 object GM {
   private val localScript: Map<String, String>
@@ -94,7 +95,6 @@ object Local {
   val promptInstallUserScript: String
   val customizeDevTool: String
   val eruda: String
-  val encoding: String
   val initChromeXt: String
   val openEruda: String
   val cspRule: String
@@ -111,14 +111,9 @@ object Local {
   init {
     val ctx = Chrome.getContext()
     Resource.enrich(ctx)
-    var css =
-        JSONArray(
-            ctx.assets.open("editor.css").bufferedReader().use { it.readText() }.split("\n\n"))
-    promptInstallUserScript =
-        "const _editor_style = ${css}[0];\n" +
-            ctx.assets.open("editor.js").bufferedReader().use { it.readText() }
+
     customizeDevTool = ctx.assets.open("devtools.js").bufferedReader().use { it.readText() }
-    css =
+    val css =
         JSONArray(ctx.assets.open("eruda.css").bufferedReader().use { it.readText() }.split("\n\n"))
     eruda =
         "eruda._styles = ${css};\n" +
@@ -128,7 +123,6 @@ object Local {
                 .use { it.readText() }
                 .replaceFirst("Symbol.ChromeXt", "Symbol." + name)
                 .replaceFirst("ChromeXtUnlockKeyForEruda", key.toString())
-    encoding = ctx.assets.open("encoding.js").bufferedReader().use { it.readText() }
     eruda_version = getErudaVersion()
 
     val seed = Random.nextDouble()
@@ -143,7 +137,11 @@ object Local {
     cspRule = loadScript(ctx, "scripts/cspRule.js")
     cosmeticFilter = loadScript(ctx, "scripts/cosmeticFilter.js")
     openEruda = loadScript(ctx, "scripts/openEruda.js")
-
+    val promptInstallUserScriptCss =
+      Base64.encode(loadText(ctx, "scripts/promptInstallUserScript.css").toByteArray())
+    promptInstallUserScript =
+      loadScript(ctx, "scripts/promptInstallUserScript.js")
+        .replace("PlaceHolder_cssString", "atob('$promptInstallUserScriptCss')")
   }
 
   fun getErudaVersion(ctx: Context = Chrome.getContext(), versionText: String? = null): String? {
@@ -169,5 +167,12 @@ object Local {
       .use { it.readText() }
       .replace("PlaceHolder_name", name)
       .replace("PlaceHolder_key", key.toString())
+  }
+
+  private fun loadText(context: Context, path: String): String {
+    return context.assets
+      .open(path)
+      .reader()
+      .use { it.readText() }
   }
 }

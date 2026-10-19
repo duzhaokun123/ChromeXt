@@ -45,7 +45,6 @@ object Listener {
   val xmlhttpRequests = mutableMapOf<Double, XMLHttpRequest>()
   val allowedActions =
       mapOf(
-          "userscript" to listOf("block", "installScript"),
           "devtools" to listOf("websocket"),
       )
   val tabNotification = mutableMapOf<Int, Any>()
@@ -76,7 +75,6 @@ object Listener {
     if (key != Local.key) return false
     val url = Chrome.getUrl(tab)!!
     if (url.endsWith(".txt")) return false
-    if (isUserScript(url) && !allowedActions.get("userscript")!!.contains(action)) return false
     if (allowedActions.get("devtools")!!.contains(action) && !isDevToolsFrontEnd(url)) return false
     return true
   }

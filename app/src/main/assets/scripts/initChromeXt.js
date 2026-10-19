@@ -104,13 +104,6 @@ if (typeof Symbol.PlaceHolder_name == "undefined") {
     }
   }
 
-  const trustedDomains = [
-    "greasyfork.org",
-    "raw.githubusercontent.com",
-    "gist.githubusercontent.com",
-  ];
-  // Verified sources of UserScripts
-
   let secure = Symbol("secure"); // Secure states of ChromeXt context
 
   class ChromeXtTarget {
@@ -184,35 +177,8 @@ if (typeof Symbol.PlaceHolder_name == "undefined") {
 
     #check(security) {
       if (security != secure) throw backup.Error("Invalid constructor");
-      // Block access to the ChromeXtTarget constructor from outside
-      if (
-        secure.description != "verified" &&
-        location.protocol.startsWith("http") &&
-        location.pathname.endsWith(".user.js") &&
-        typeof installScript == "function" &&
-        !trustedDomains.includes(location.hostname)
-      ) {
-        this.security = "userscript";
-        // Not a secure context since the page might not be a UserScript
 
-        fetch(location.href, { cache: "only-if-cached", mode: "same-origin" })
-          // Local pages are always cached before shown
-          .then((res) => {
-            const type = res.headers.get("Content-Type").trim();
-            if (
-              type.startsWith("text/javascript") ||
-              type.startsWith("application/javascript") ||
-              type.startsWith("text/plain")
-            ) {
-              this.security = secure;
-            } else {
-              throw TypeError(`Incompatible content-type: ${type}`);
-            }
-          })
-          .catch((e) => (this.security = e));
-      } else {
-        this.security = security;
-      }
+      this.security = security;
     }
 
     #confirmAction(action) {

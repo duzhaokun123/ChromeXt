@@ -2,7 +2,13 @@ package org.matrix.chromext.ui
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Bundle
+import android.text.SpannableStringBuilder
+import android.text.style.BackgroundColorSpan
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -13,6 +19,9 @@ import android.widget.TextView
 import android.widget.Toolbar
 import androidx.core.net.toFile
 import androidx.core.net.toUri
+import androidx.core.text.inSpans
+import androidx.core.text.italic
+import androidx.core.text.scale
 import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -34,6 +43,19 @@ import org.matrix.chromext.utils.ScriptParser
 class ScriptInstallActivity : Activity(), OnApplyWindowInsetsListener {
   companion object {
     const val PICK_FILE = 1
+
+    val grantChromeXt = listOf(
+      "GM.ChromeXt",
+      "GM_ChromeXt"
+    )
+    val grantHighRisk = listOf(
+      "GM_notification",
+      "GM_setClipboard",
+      "GM_cookie",
+      "GM.notification",
+      "GM.setClipboard",
+      "GM.cookie"
+    )
   }
 
   val toolbar by lazy { findViewById<Toolbar>(R.id.toolbar) }
@@ -104,13 +126,14 @@ class ScriptInstallActivity : Activity(), OnApplyWindowInsetsListener {
   }
 
   override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-    when(requestCode) {
+    when (requestCode) {
       PICK_FILE -> {
         if (resultCode == RESULT_OK) {
           et_url.setText(data?.dataString)
           loadUrl()
         }
       }
+
       else -> super.onActivityResult(requestCode, resultCode, data)
     }
   }
@@ -124,11 +147,12 @@ class ScriptInstallActivity : Activity(), OnApplyWindowInsetsListener {
     val url = et_url.text.toString().toUri()
     scope.launch(Dispatchers.IO) {
       runCatching {
-        when(url.scheme) {
+        when (url.scheme) {
           "http", "https" -> {
             val response = Chrome.httpClient.get(url.toString())
             scriptFile = response.bodyAsText()
           }
+
           "content" -> {
             val inputStream = contentResolver.openInputStream(url)!!
             val reader = inputStream.reader()
@@ -136,10 +160,12 @@ class ScriptInstallActivity : Activity(), OnApplyWindowInsetsListener {
             reader.close()
             inputStream.close()
           }
+
           "file" -> {
             val file = url.toFile()
             scriptFile = file.readText()
           }
+
           else -> throw RuntimeException("loadUrl unsupported scheme ${url.scheme}")
         }
         val metadata = ScriptParser.parseScriptMetadata(scriptFile!!)
@@ -150,31 +176,68 @@ class ScriptInstallActivity : Activity(), OnApplyWindowInsetsListener {
             tv_info.text = "script parse failed!"
           } else {
             btn_install.isEnabled = true
-            tv_info.text = """
-              |name: ${metadata.localeName}
-              |version: ${metadata.version}
-              |author: ${metadata.author}
-              |
-              |${metadata.localeDescription}
-              |
-              |@grant:
-              |${metadata.grant.joinToString("\n")}
-              |
-              |@match
-              |${metadata.match.joinToString("\n")}
-              |
-              |@include
-              |${metadata.include.joinToString("\n")}
-              |
-              |@exclude
-              |${metadata.exclude.joinToString("\n")}
-              |
-              |@connect
-              |${metadata.connect.joinToString("\n")}
-            """.trimMargin()
+            val sb = SpannableStringBuilder()
+            sb.scale(0.9F, { append("name: ") })
+            metadata.localeName?.let { sb.append(it) } ?: run { sb.italic { append("<null>") } }
+            sb.appendLine()
+            sb.scale(0.9F, { append("version: ") })
+            metadata.version?.let { sb.append(it) } ?: run { sb.italic { append("<null>") } }
+            sb.appendLine()
+            sb.scale(0.9F, { append("author: ") })
+            metadata.author?.let { sb.append(it) } ?: run { sb.italic { append("<null>") } }
+            sb.appendLine()
+            sb.appendLine()
+            metadata.localeDescription?.let { sb.appendLine(it) }
+              ?: run { sb.italic { append("No Description") } }
+            sb.appendLine()
+            sb.appendLine("@grant:")
+            metadata.grant.forEach { grant ->
+              when (grant) {
+                in grantChromeXt -> {
+                  sb.inSpans(
+                    StyleSpan(Typeface.BOLD),
+                    ForegroundColorSpan(Color.WHITE),
+                    BackgroundColorSpan(Color.RED)
+                  ) {
+                    appendLine(grant)
+                  }
+                }
+
+                in grantHighRisk -> {
+                  sb.inSpans(StyleSpan(Typeface.BOLD), ForegroundColorSpan(Color.RED)) {
+                    appendLine(grant)
+                  }
+                }
+
+                else -> sb.appendLine(grant)
+              }
+            }
+            sb.appendLine()
+            sb.appendLine("@match")
+            metadata.match.forEach { match ->
+              sb.appendLine(match)
+            }
+            sb.appendLine()
+            sb.appendLine("@include")
+            metadata.include.forEach { include ->
+              sb.appendLine(include)
+            }
+            sb.appendLine()
+            sb.appendLine("@exclude")
+            metadata.exclude.forEach { exclude ->
+              sb.appendLine(exclude)
+            }
+            sb.appendLine()
+            sb.appendLine("@connect")
+            metadata.connect.forEach { connect ->
+              sb.appendLine(connect)
+            }
+
+            tv_info.text = sb
 
             val runtimeScript = ScriptDbManager.scripts.find { it.id == metadata.id }
-            val runtimeScriptMetadata = if (runtimeScript != null) ScriptParser.parseScriptMetadata(runtimeScript.meta) else null
+            val runtimeScriptMetadata =
+              if (runtimeScript != null) ScriptParser.parseScriptMetadata(runtimeScript.meta) else null
             if (runtimeScriptMetadata == null) {
               btn_install.text = "install"
               tv_installHint.text = "new script"

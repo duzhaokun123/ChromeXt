@@ -17,12 +17,7 @@ object ContextMenuHook : BaseHook() {
   val erudaMenuId = 31415926
 
   private fun openEruda(url: String) {
-    if (isUserScript(url)) {
-      val sandBoxed = shouldBypassSandbox(url)
-      Chrome.evaluateJavascript(listOf("Symbol.installScript(true);"), null, null, sandBoxed)
-    } else {
       Chrome.evaluateJavascript(listOf(Local.openEruda))
-    }
   }
 
   private val clickListnerFactory = { mode: ActionMode, url: String ->
@@ -45,9 +40,7 @@ object ContextMenuHook : BaseHook() {
           val menu = it.args[1] as Menu
           if (menu.findItem(erudaMenuId) != null) return@hookAfter
           Resource.enrich(Chrome.getContext())
-          val titleId =
-            if (isUserScript(url)) R.string.main_menu_install_script
-            else R.string.main_menu_eruda_console
+          val titleId = R.string.main_menu_eruda_console
           val erudaMenu = menu.add(titleId)
           val mId = erudaMenu::class.java.getDeclaredField("mId")
           mId.setAccessible(true)

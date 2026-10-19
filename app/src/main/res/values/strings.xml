@@ -2,7 +2,7 @@
 	<string name="app_name">ChromeXt</string>
 	<string name="view_in_chrome">Open in Chrome</string>
 	<string name="xposed_desc">UserScript and DevTools supports for Google Chrome stable</string>
-	<string name="main_menu_install_script">Install UserScript</string>
+	<string name="main_menu_install_script">Try install as UserScript</string>
 	<string name="main_menu_eruda_console">Eruda console</string>
 	<string name="main_menu_userscript">UserScript</string>
 	<string name="res_inject_success">res_inject_success</string>
