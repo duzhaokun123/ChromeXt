@@ -21,6 +21,12 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <CheckBox
+                android:id="@+id/cb_enabled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="enable" />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -92,6 +98,20 @@
                 android:importantForAutofill="no"
                 android:inputType="textMultiLine"
                 android:maxLines="4" />
+
+            <HorizontalScrollView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:id="@+id/tv_raw"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:fontFamily="monospace"
+                    android:textIsSelectable="true"
+                    tools:text="line1\nline2\nline3" />
+            </HorizontalScrollView>
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

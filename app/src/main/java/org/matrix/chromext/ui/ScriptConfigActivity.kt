@@ -7,9 +7,11 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.ScrollView
 import android.widget.Spinner
+import android.widget.TextView
 import android.widget.Toolbar
 import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
@@ -33,6 +35,8 @@ class ScriptConfigActivity : Activity(), OnApplyWindowInsetsListener {
   val et_userInclude by lazy { findViewById<EditText>(R.id.et_userInclude) }
   val et_userExclude by lazy { findViewById<EditText>(R.id.et_userExclude) }
   val et_userConnect by lazy { findViewById<EditText>(R.id.et_userConnect) }
+  val tv_raw by lazy { findViewById<TextView>(R.id.tv_raw) }
+  val cb_enabled by lazy { findViewById<CheckBox>(R.id.cb_enabled) }
 
   var scriptId: String? = null
   var script: Script? = null
@@ -62,6 +66,10 @@ class ScriptConfigActivity : Activity(), OnApplyWindowInsetsListener {
     metadata = ScriptParser.parseMetadata(script?.meta!!)
     setTitle(metadata.localeName ?: scriptId)
 
+    cb_enabled.isChecked = script!!.enabled
+    cb_enabled.setOnCheckedChangeListener { _, checked ->
+      script!!.enabled = checked
+    }
     sp_userRunAt.adapter = ArrayAdapter(
       this,
       android.R.layout.simple_spinner_item,
@@ -93,6 +101,7 @@ class ScriptConfigActivity : Activity(), OnApplyWindowInsetsListener {
     et_userConnect.doAfterTextChanged { editable ->
       script!!.userConnect = editable.toString()
     }
+    tv_raw.text = script!!.meta
 
     ViewCompat.setOnApplyWindowInsetsListener(window.decorView, this)
   }

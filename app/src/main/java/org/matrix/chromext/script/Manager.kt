@@ -76,11 +76,11 @@ object ScriptDbManager {
       script.forEach { script ->
         loadedScripts.removeAll { it.id == script.id }
         val loadedScript = loadScriptById(script.id)
-        if (loadedScript == null) {
-          Log.e("upsert ${script.id} reload failed")
-        } else {
+        if (loadedScript != null) {
           loadedScripts.add(loadedScript)
           Log.i("upsert ${script.id} reloaded")
+        } else if (script.enabled) {
+          Log.e("upsert ${script.id} reload failed")
         }
       }
     }
@@ -100,11 +100,11 @@ object ScriptDbManager {
         ?: Script(metadata.id, UUID.randomUUID(), metaString)
       db.scriptDao().upsert(script)
       val loadedScript = loadScriptById(script.id)
-      if (loadedScript == null) {
-        Log.e("upsertScriptFile ${script.id} reload failed")
-      } else {
+      if (loadedScript != null) {
         loadedScripts.add(loadedScript)
         Log.i("upsertScriptFile ${script.id} reloaded")
+      } else if (script.enabled) {
+        Log.e("upsertScriptFile ${script.id} reload failed")
       }
     }
     return true

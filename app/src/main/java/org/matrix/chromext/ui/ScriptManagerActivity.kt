@@ -86,6 +86,7 @@ class ScriptManagerActivity : Activity(),
             |author: ${metadata.author}
             |id: ${script.id}
             |uuid: ${script.uuid}
+            |enabled: ${script.enabled}
             |fileSize: ${if (fileSize != -1L) fileSize else "file lost!"}
             |
             |${metadata.localeDescription}
@@ -114,7 +115,6 @@ class ScriptManagerActivity : Activity(),
       }
 
     ViewCompat.setOnApplyWindowInsetsListener(window.decorView, this)
-    updateScriptInfo()
   }
 
   override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -145,6 +145,11 @@ class ScriptManagerActivity : Activity(),
       lv_scripts.updatePadding(bottom = systemBars.bottom)
     }
     return WindowInsetsCompat.CONSUMED
+  }
+
+  override fun onResume() {
+    super.onResume()
+    updateScriptInfo()
   }
 
   override fun onDestroy() {
