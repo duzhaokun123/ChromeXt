@@ -11,6 +11,8 @@ import android.os.Handler
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.cache.HttpCache
+import io.ktor.client.plugins.cache.storage.FileStorage
+import kotlinx.io.files.Path
 import java.io.File
 import java.io.FileReader
 import java.lang.ref.WeakReference
@@ -63,7 +65,9 @@ object Chrome {
       install(HttpTimeout) {
         requestTimeoutMillis = 10_000
       }
-      install(HttpCache)
+      install(HttpCache) {
+        publicStorage(FileStorage(Path(getContext().cacheDir.resolve("ChromeXt").path)))
+      }
     }
   }
 

@@ -57,14 +57,17 @@ suspend fun loadExternalResource(url: String): ByteArray {
      *
      */
     "data" -> {
-      val decodedUrl = Uri.decode(url)
-      val base64Begin = decodedUrl.indexOf(";base64,", ignoreCase = true)
-      if (base64Begin == -1) {
-        throw RuntimeException("loadExternalResource unsupported data url, not base64 encode for $uri")
+      val line = url.removePrefix("data:")
+      val comma = line.indexOf(",")
+      if (comma == -1) throw RuntimeException("loadExternalResource unsupported data url for $uri")
+      val p1 = line.substring(0, comma)
+      val p2 = line.substring(comma + 1)
+      if (p1.split(";").last().equals("base64", ignoreCase = true)) {
+        Base64.withPadding(Base64.PaddingOption.PRESENT_OPTIONAL)
+          .decode(Uri.decode(p2))
+      } else {
+        Uri.decode(p2).toByteArray()
       }
-
-      Base64.withPadding(Base64.PaddingOption.PRESENT_OPTIONAL)
-        .decode(decodedUrl, base64Begin + 8)
     }
 
     else -> {
