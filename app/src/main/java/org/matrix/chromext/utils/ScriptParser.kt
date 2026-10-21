@@ -20,6 +20,7 @@ data class ScriptMetadata(
   val version get() = getMetadata("version")
   val noframes get() = hasMetadata("noframes")
   val `run-at` get() = Script.RunAt.fromValue(getMetadata("run-at") ?: "") ?: Script.RunAt.UNSET
+  val icon get() = getMetadata("icon")
 
   val localeName get() = getLocaleMetadata("name")
   val localeDescription get() = getLocaleMetadata("description")

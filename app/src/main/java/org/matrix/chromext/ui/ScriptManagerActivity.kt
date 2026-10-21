@@ -3,6 +3,8 @@ package org.matrix.chromext.ui
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
+import android.graphics.BitmapFactory
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
@@ -11,25 +13,32 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toolbar
+import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.matrix.chromext.R
 import org.matrix.chromext.Resource
 import org.matrix.chromext.db.entity.Script
 import org.matrix.chromext.script.LoadedScript
 import org.matrix.chromext.script.ScriptDbManager
 import org.matrix.chromext.script.ScriptFileStorage
+import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.ScriptMetadata
 import org.matrix.chromext.utils.ScriptParser
+import org.matrix.chromext.utils.loadExternalResource
 
 data class InstallScriptInfo(
   val script: Script,
@@ -45,6 +54,7 @@ class ScriptManagerActivity : Activity(),
 
   var loadedScripts: List<LoadedScript> = emptyList()
   var installScripts: List<InstallScriptInfo> = emptyList()
+  var scriptIcon: Map<String, Drawable> = emptyMap()
 
   private val scope = MainScope()
 
@@ -80,6 +90,14 @@ class ScriptManagerActivity : Activity(),
 
           val (script, metadata, fileSize) = installScripts[position]
 
+          val icon = scriptIcon[script.id]
+          view.findViewById<ImageView>(R.id.iv_icon).let { iv_icon ->
+            if (icon != null) {
+              iv_icon.setImageDrawable(icon)
+            } else {
+              iv_icon.setImageResource(R.drawable.hide_image_24px)
+            }
+          }
           view.findViewById<TextView>(R.id.tv_name).text = metadata.localeName
           view.findViewById<TextView>(R.id.tv_info).text = """
             |version: ${metadata.version}
@@ -123,11 +141,12 @@ class ScriptManagerActivity : Activity(),
   }
 
   override fun onMenuItemSelected(featureId: Int, item: MenuItem): Boolean {
-    when(item.itemId) {
+    when (item.itemId) {
       R.id.reflash -> {
         updateScriptInfo()
         return true
       }
+
       R.id.install -> {
         startActivity(Intent(this, ScriptInstallActivity::class.java))
         return true
@@ -140,7 +159,7 @@ class ScriptManagerActivity : Activity(),
     v: View,
     insets: WindowInsetsCompat
   ): WindowInsetsCompat {
-    insets.getInsets(WindowInsetsCompat.Type.systemBars()).let {systemBars ->
+    insets.getInsets(WindowInsetsCompat.Type.systemBars()).let { systemBars ->
       toolbar.updatePadding(top = systemBars.top)
       lv_scripts.updatePadding(bottom = systemBars.bottom)
     }
@@ -167,7 +186,28 @@ class ScriptManagerActivity : Activity(),
               it, ScriptParser.parseMetadata(it.meta), ScriptFileStorage.getScriptSize(it.id)
             )
           }
-      scope.launch(Dispatchers.Main) {
+      launch(Dispatchers.IO) {
+        scriptIcon = installScripts.mapNotNull { (script, metadata, _) ->
+          if (metadata.icon == null) return@mapNotNull null
+          async {
+            script.id to runCatching {
+              val data = loadExternalResource(metadata.icon!!)
+              val bitmap = BitmapFactory.decodeByteArray(data, 0, data.size)
+                ?: throw RuntimeException("image ${metadata.icon} decode failed")
+              bitmap.toDrawable(resources)
+            }.onFailure { e ->
+              Log.w(e)
+            }
+          }
+        }.awaitAll().mapNotNull {
+          val icon = it.second.getOrNull() ?: return@mapNotNull null
+          it.first to icon
+        }.toMap()
+        withContext(Dispatchers.Main) {
+          (lv_scripts.adapter as BaseAdapter).notifyDataSetChanged()
+        }
+      }
+      launch(Dispatchers.Main) {
         tv_info.text = """
           |loaded scripts ${loadedScripts.size}
           |install scripts ${installScripts.size}

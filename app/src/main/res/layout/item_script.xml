@@ -5,8 +5,16 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
+    <ImageView
+        android:id="@+id/iv_icon"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:contentDescription="icon"
+        android:src="@drawable/hide_image_24px" />
+
     <TextView
         android:id="@+id/tv_name"
+        android:layout_below="@id/iv_icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textAppearance="@android:style/TextAppearance.DeviceDefault.Medium"

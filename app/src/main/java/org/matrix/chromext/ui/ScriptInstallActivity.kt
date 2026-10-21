@@ -2,12 +2,17 @@ package org.matrix.chromext.ui
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.text.Spannable
+import android.text.SpannableString
 import android.text.SpannableStringBuilder
 import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
+import android.text.style.ImageSpan
 import android.text.style.StyleSpan
 import android.view.Menu
 import android.view.MenuItem
@@ -17,8 +22,7 @@ import android.widget.EditText
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toolbar
-import androidx.core.net.toFile
-import androidx.core.net.toUri
+import androidx.core.graphics.drawable.toDrawable
 import androidx.core.text.inSpans
 import androidx.core.text.italic
 import androidx.core.text.scale
@@ -26,19 +30,18 @@ import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
-import io.ktor.client.request.get
-import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.matrix.chromext.Chrome
 import org.matrix.chromext.R
 import org.matrix.chromext.Resource
 import org.matrix.chromext.script.ScriptDbManager
 import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.ScriptParser
+import org.matrix.chromext.utils.dp2px
+import org.matrix.chromext.utils.loadExternalResource
 
 class ScriptInstallActivity : Activity(), OnApplyWindowInsetsListener {
   companion object {
@@ -144,31 +147,25 @@ class ScriptInstallActivity : Activity(), OnApplyWindowInsetsListener {
     tv_installHint.text = ""
     btn_install.isEnabled = false
     btn_load.isEnabled = false
-    val url = et_url.text.toString().toUri()
+    val url = et_url.text.toString()
     scope.launch(Dispatchers.IO) {
       runCatching {
-        when (url.scheme) {
-          "http", "https" -> {
-            val response = Chrome.httpClient.get(url.toString())
-            scriptFile = response.bodyAsText()
-          }
-
-          "content" -> {
-            val inputStream = contentResolver.openInputStream(url)!!
-            val reader = inputStream.reader()
-            scriptFile = reader.readText()
-            reader.close()
-            inputStream.close()
-          }
-
-          "file" -> {
-            val file = url.toFile()
-            scriptFile = file.readText()
-          }
-
-          else -> throw RuntimeException("loadUrl unsupported scheme ${url.scheme}")
-        }
+        scriptFile = loadExternalResource(url)!!.decodeToString()
         val metadata = ScriptParser.parseScriptMetadata(scriptFile!!)
+
+        var scriptIcon: Drawable? = null
+        if (metadata?.icon != null) {
+          runCatching {
+            val data = loadExternalResource(metadata.icon!!)
+            val bitmap = BitmapFactory.decodeByteArray(data, 0, data.size)
+              ?: throw RuntimeException("image ${metadata.icon} decode failed")
+            scriptIcon = bitmap.toDrawable(resources)
+            scriptIcon.setBounds(0, 0, dp2px(24), dp2px(24))
+          }.onFailure { e ->
+            Log.w("load script icon failed", e)
+          }
+        }
+
         val installedScript = if (metadata != null) ScriptDbManager.getScript(metadata.id) else null
         val installedScriptMetadata =
           if (installedScript != null) ScriptParser.parseMetadata(installedScript.meta) else null
@@ -181,6 +178,12 @@ class ScriptInstallActivity : Activity(), OnApplyWindowInsetsListener {
           } else {
             btn_install.isEnabled = true
             val sb = SpannableStringBuilder()
+            if (scriptIcon != null) {
+              val imageSpan = ImageSpan(scriptIcon)
+              val ss = SpannableString("icon")
+              ss.setSpan(imageSpan, 0, 4, Spannable.SPAN_INCLUSIVE_EXCLUSIVE)
+              sb.appendLine(ss)
+            }
             sb.scale(0.9F, { append("name: ") })
             metadata.localeName?.let { sb.append(it) } ?: run { sb.italic { append("<null>") } }
             sb.appendLine()
