@@ -48,26 +48,41 @@ object ScriptParser {
     val grant = mutableListOf<String>()
     val require = mutableListOf<String>()
     val connect = mutableListOf<String>()
+    val raw = mutableListOf<Pair<String, String?>>()
 
-    val raw = metadata.split("\n")
-      .mapNotNull { line ->
-        val metaMatchGroup =
-          Regex("""^//\s+@(?<key>[\w-:]+)(\s+(?<value>.+))?""").matchEntire(line)?.groups
-            ?: return@mapNotNull null
-        val key = metaMatchGroup[1]?.value ?: return@mapNotNull null
-        val value = if (metaMatchGroup[2] != null) metaMatchGroup[3]?.value else null
-        if (value != null) {
-          when (key) {
-            "match" -> match.add(value)
-            "include" -> include.add(value)
-            "exclude" -> exclude.add(value)
-            "grant" -> grant.add(value)
-            "require" -> require.add(value)
-            "connect" -> connect.add(value)
-          }
-        }
-        return@mapNotNull key to value
+    val lines = metadata.split("\n")
+    for (i in 0 until lines.size) {
+      var line = lines[i].trim()
+      if (!line.startsWith("//")) {
+        continue
       }
+      line = line.removePrefix("//").trim()
+      if (line.isEmpty() || line.first() != '@') {
+        continue
+      }
+      line = line.removePrefix("@")
+      var keyEnd = line.indexOfFirst { c -> c.isWhitespace() }
+      if (keyEnd == -1) keyEnd = line.length
+      val key = line.substring(0, keyEnd)
+      if (key.isEmpty()) {
+        continue
+      }
+      line = line.drop(keyEnd)
+      val value = line.trim().takeIf { it.isNotEmpty() }
+
+      raw.add(key to value)
+      if (value != null) {
+        when (key) {
+          "match" -> match.add(value)
+          "include" -> include.add(value)
+          "exclude" -> exclude.add(value)
+          "grant" -> grant.add(value)
+          "require" -> require.add(value)
+          "connect" -> connect.add(value)
+        }
+      }
+    }
+
     return ScriptMetadata(
       match = match,
       include = include,
