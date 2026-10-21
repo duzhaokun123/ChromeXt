@@ -1,6 +1,7 @@
 package org.matrix.chromext.script
 
 import org.json.JSONObject
+import org.matrix.chromext.db.entity.Script
 import java.util.Locale
 
 data class RuntimeScript(
@@ -31,6 +32,8 @@ data class ScriptMetadata(
   val description get() = getMetadata("description")
   val author get() = getMetadata("author")
   val version get() = getMetadata("version")
+  val noframes get() = hasMetadata("noframes")
+  val `run-at` get() = Script.RunAt.fromValue(getMetadata("run-at") ?: "") ?: Script.RunAt.UNSET
 
   val localeName get() = getLocaleMetadata("name")
   val localeDescription get() = getLocaleMetadata("description")

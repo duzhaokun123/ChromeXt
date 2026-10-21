@@ -169,6 +169,10 @@ class ScriptInstallActivity : Activity(), OnApplyWindowInsetsListener {
           else -> throw RuntimeException("loadUrl unsupported scheme ${url.scheme}")
         }
         val metadata = ScriptParser.parseScriptMetadata(scriptFile!!)
+        val installedScript = if (metadata != null) ScriptDbManager.getScript(metadata.id) else null
+        val installedScriptMetadata =
+          if (installedScript != null) ScriptParser.parseMetadata(installedScript.meta) else null
+
         withContext(Dispatchers.Main) {
           tv_raw.text = scriptFile
           if (metadata == null) {
@@ -235,15 +239,12 @@ class ScriptInstallActivity : Activity(), OnApplyWindowInsetsListener {
 
             tv_info.text = sb
 
-            val runtimeScript = ScriptDbManager.scripts.find { it.id == metadata.id }
-            val runtimeScriptMetadata =
-              if (runtimeScript != null) ScriptParser.parseScriptMetadata(runtimeScript.meta) else null
-            if (runtimeScriptMetadata == null) {
+            if (installedScriptMetadata == null) {
               btn_install.text = "install"
               tv_installHint.text = "new script"
             } else {
-              tv_installHint.text = "${runtimeScriptMetadata.version} -> ${metadata.version}"
-              if (metadata.version == runtimeScriptMetadata.version) {
+              tv_installHint.text = "${installedScriptMetadata.version} -> ${metadata.version}"
+              if (metadata.version == installedScriptMetadata.version) {
                 btn_install.text = "reinstall"
               } else {
                 btn_install.text = "update"

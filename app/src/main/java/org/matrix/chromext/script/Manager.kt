@@ -2,54 +2,87 @@ package org.matrix.chromext.script
 
 import android.content.Context
 import androidx.room3.Room
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import org.json.JSONArray
 import org.json.JSONObject
 import org.matrix.chromext.Chrome
 import org.matrix.chromext.db.ChromeXtDatabase
 import org.matrix.chromext.db.entity.Script
 import org.matrix.chromext.db.entity.ScriptStorage
+import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.ScriptParser
-import org.matrix.chromext.utils.invokeMethod
-import org.matrix.chromext.utils.isDevToolsFrontEnd
-import org.matrix.chromext.utils.isUserScript
-import org.matrix.chromext.utils.matching
-import org.matrix.chromext.utils.parseOrigin
-import org.matrix.chromext.utils.resolveContentUrl
-import org.matrix.chromext.utils.shouldBypassSandbox
 import java.util.UUID
 
+data class LoadedScript(
+  val script: Script,
+  val metadata: ScriptMetadata,
+  val options: Options,
+  val code: String,
+  val lib: List<String>
+) {
+  data class Options(
+    val match: List<String>,
+    val include: List<String>,
+    val exclude: List<String>,
+    val grant: List<String>,
+    val require: List<String>,
+    val connect: List<String>,
+    val runAt: Script.RunAt,
+    val noFrames: Boolean,
+    val hasStorage: Boolean,
+  )
+
+  val id get() = script.id
+  val uuid get() = script.uuid
+}
+
+val LoadedScript.storage: JSONObject?
+  get() = if (this.options.hasStorage) ScriptDbManager.scriptStorage.getOrPut(this.id, { JSONObject() }) else null
+
 object ScriptDbManager {
-  // HACK! should not keep old code's Script
-  var scripts: MutableList<RuntimeScript>
-    private set
   val cosmeticFilters: MutableMap<String, String>
   val cspRules: MutableMap<String, String>
 
+  val loadedScripts = mutableListOf<LoadedScript>()
+  val scriptStorage = mutableMapOf<String, JSONObject>()
   val db: ChromeXtDatabase
 
   init {
     val ctx = Chrome.getContext()
     @Suppress("UNCHECKED_CAST")
     cosmeticFilters =
-        ctx.getSharedPreferences("CosmeticFilter", Context.MODE_PRIVATE).getAll()
-            as MutableMap<String, String>
+      ctx.getSharedPreferences("CosmeticFilter", Context.MODE_PRIVATE).getAll()
+          as MutableMap<String, String>
     @Suppress("UNCHECKED_CAST")
     cspRules =
-        ctx.getSharedPreferences("CSPRule", Context.MODE_PRIVATE).getAll()
-            as MutableMap<String, String>
+      ctx.getSharedPreferences("CSPRule", Context.MODE_PRIVATE).getAll()
+          as MutableMap<String, String>
 
     db = Room.databaseBuilder<ChromeXtDatabase>(ctx, "ChromeXt")
       .build()
 
-    scripts = loadRuntimeScript()
+    runBlocking {
+      loadScriptStorage()
+      loadScript()
+    }
   }
 
   fun upsert(vararg script: Script) {
     runBlocking {
       db.scriptDao().upsert(*script)
+      script.forEach { script ->
+        loadedScripts.removeAll { it.id == script.id }
+        val loadedScript = loadScriptById(script.id)
+        if (loadedScript == null) {
+          Log.e("upsert ${script.id} reload failed")
+        } else {
+          loadedScripts.add(loadedScript)
+          Log.i("upsert ${script.id} reloaded")
+        }
+      }
     }
-    scripts = loadRuntimeScript()
   }
 
   fun upsertScriptFile(scriptFile: String): Boolean {
@@ -60,103 +93,49 @@ object ScriptDbManager {
       return false
     }
     runBlocking {
+      loadedScripts.removeAll { it.id == metadata.id }
       val script = db.scriptDao().getById(metadata.id)
         ?.copy(meta = metaString)
         ?: Script(metadata.id, UUID.randomUUID(), metaString)
       db.scriptDao().upsert(script)
+      val loadedScript = loadScriptById(script.id)
+      if (loadedScript == null) {
+        Log.e("upsertScriptFile ${script.id} reload failed")
+      } else {
+        loadedScripts.add(loadedScript)
+        Log.i("upsertScriptFile ${script.id} reloaded")
+      }
     }
-    scripts = loadRuntimeScript()
     return true
   }
 
+  @Deprecated(
+    "use Chrome.injectChromeXtScript", ReplaceWith(
+      "Chrome.injectChromeXtScript(url, webView, frameId)",
+      "org.matrix.chromext.Chrome"
+    )
+  )
   fun invokeScript(url: String, webView: Any? = null, frameId: String? = null) {
-    val codes = mutableListOf<String>(Local.initChromeXt)
-    val path = resolveContentUrl(url)
-    val webSettings = webView?.invokeMethod { name == "getSettings" }
-
-    var trustedPage: Boolean
-    // Whether ChromeXt is accessible in the global context
-    var runScripts = false
-    // Whether UserScripts are invoked
-    var bypassSandbox = false
-
-    if (isUserScript(url, path)) {
-      codes.add(Local.promptInstallUserScript)
-      bypassSandbox = shouldBypassSandbox(url)
-    }
-
-    if (isDevToolsFrontEnd(url)) {
-      trustedPage = true
-      codes.add(Local.customizeDevTool)
-      webSettings?.invokeMethod(null) { name == "setUserAgentString" }
-    } else {
-      val origin = parseOrigin(url)
-      if (origin != null) {
-        if (cspRules.contains(origin)) {
-          runCatching {
-            val rule = JSONArray(cspRules.get(origin))
-            codes.add("Symbol.ChromeXt.cspRules.push(...${rule});${Local.cspRule}")
-          }
-        }
-        if (cosmeticFilters.contains(origin)) {
-          runCatching {
-            val filter = JSONArray(cosmeticFilters.get(origin))
-            codes.add("Symbol.ChromeXt.filters.push(...${filter});${Local.cosmeticFilter}")
-          }
-        }
-      }
-      trustedPage = false
-      runScripts = true
-    }
-
-    if (trustedPage) {
-      codes.add("globalThis.ChromeXt = Symbol.ChromeXt;")
-    } else {
-      codes.add("Symbol.ChromeXt.lock(${Local.key}, '${Local.name}');")
-    }
-    codes.add("//# sourceURL=local://ChromeXt/init" + if (frameId == null) "" else "/" + frameId)
-    webSettings?.invokeMethod(true) { name == "setJavaScriptEnabled" }
-    val initScript = codes.joinToString("\n")
-
-    val asyncEvaluation = bypassSandbox || frameId != null
-    var framesGranted = false
-
-    if (!asyncEvaluation)
-        Chrome.evaluateJavascript(
-            listOf(initScript), webView, frameId, bypassSandbox, bypassSandbox)
-    codes.clear()
-    if (asyncEvaluation) codes.add(initScript)
-    if (runScripts) {
-      scripts
-          .filter { matching(it, url) && !(frameId != null && it.noframes) }
-          .forEach {
-            if (it.grant.contains("frames")) framesGranted = true
-            GM.bootstrap(it, codes)
-          }
-      if (!asyncEvaluation) Chrome.evaluateJavascript(codes, webView, frameId)
-    }
-    if (asyncEvaluation)
-        Chrome.evaluateJavascript(codes, webView, frameId, bypassSandbox, bypassSandbox)
-
-    if (framesGranted && frameId == null) Chrome.injectFrames(webView)
+    Chrome.injectChromeXtScript(url, webView, frameId)
   }
 
   fun updateScriptStorage() {
     runBlocking {
       db.scriptStorageDao().upsert(
-      scripts.map {
-        ScriptStorage(it.id, it.storage ?: JSONObject())
-      })
+        scriptStorage.map { (k, v) ->
+          ScriptStorage(k, v)
+        })
     }
   }
 
   fun deleteScript(vararg ids: String) {
+    loadedScripts.removeAll { it.id in ids }
+    ids.forEach { scriptStorage.remove(it) }
     runBlocking {
       db.scriptDao().deleteById(*ids)
       db.scriptStorageDao().deleteById(*ids)
     }
     ScriptFileStorage.deleteScript(*ids)
-    scripts = loadRuntimeScript()
   }
 
   fun getAllScript(): List<Script> {
@@ -171,28 +150,64 @@ object ScriptDbManager {
     }
   }
 
-  // HACK! should split script and storage
-  private fun loadRuntimeScript(): MutableList<RuntimeScript> {
-     return runBlocking { db.scriptDao().getAll() }
-      .mapNotNull { script ->
-        val scriptFile = ScriptFileStorage.getScript(script.id) ?: return@mapNotNull null
-        val (_, code) = ScriptParser.splitScript(scriptFile) ?: return@mapNotNull null
-        // HACK! should replace old parser
-        var meta = script.meta.replace("// ==/UserScript==", "") +
-            script.userMatch.split("\n").filter { it.isNotBlank() }.joinToString("\n","\n") { "// @match $it" } +
-            script.userInclude.split("\n").filter { it.isNotBlank() }.joinToString("\n", "\n") { "// @include $it" } +
-            script.userExclude.split("\n").filter { it.isNotBlank() }.joinToString("\n", "\n") { "// @exclude $it" } +
-            script.userConnect.split("\n").filter { it.isNotBlank() }.joinToString("\n", "\n") { "// @connect $it" }
-        if (script.userRunAt != Script.RunAt.UNSET) {
-          meta = meta.replace(Regex("""^//\s+@run-at\s+.+$""", RegexOption.MULTILINE), "") +
-              "\n// @run-at ${script.userRunAt.value}\n"
+  private suspend fun loadScript() {
+    db.scriptDao().getAllEnabledId()
+      .forEach { id ->
+        val loadedScript = loadScriptById(id)
+        if (loadedScript == null) {
+          Log.e("load userscript $id failed")
+        } else {
+          loadedScripts.add(loadedScript)
         }
-        meta += "\n// ==/UserScript==\n\n"
-        val storage = runBlocking { db.scriptStorageDao().getById(script.id) } ?: JSONObject()
-        val runtimeScript =
-          parseScript(meta + code, uuid = script.uuid.toString(), storage = storage.toString())
-        return@mapNotNull runtimeScript?.copy(id = script.id)
       }
-      .toMutableList()
+  }
+
+  private suspend fun loadScriptStorage() {
+    db.scriptStorageDao().getAll()
+      .forEach {
+        scriptStorage[it.id] = it.storage
+      }
+  }
+
+  private suspend fun loadScriptById(id: String): LoadedScript? {
+    val script = db.scriptDao().getById(id) ?: return null
+    if (!script.enabled) return null
+    val scriptFile = ScriptFileStorage.getScript(script.id) ?: return null
+    val code = (ScriptParser.splitScript(scriptFile) ?: return null).second ?: return null
+    val metadata = ScriptParser.parseMetadata(script.meta)
+    // keep old behavior
+    val addGrant = mutableListOf<String>()
+    if (!metadata.grant.contains("GM_xmlhttpRequest") &&
+      (metadata.grant.contains("GM_download") ||
+          metadata.grant.contains("GM.xmlHttpRequest") ||
+          metadata.grant.contains("GM_getResourceText"))) {
+      addGrant.add("GM_xmlhttpRequest")
+    }
+    val hasStorage = metadata.grant.contains("GM.getValue") ||
+        metadata.grant.contains("GM_getValue") ||
+        metadata.grant.contains("GM_cookie")
+    val options = LoadedScript.Options(
+      match = metadata.match + script.userMatchList,
+      include = metadata.include + script.userIncludeList,
+      exclude = metadata.exclude + script.userExcludeList,
+      grant = metadata.grant + addGrant,
+      require = metadata.require,
+      connect = metadata.connect + script.userConnectList,
+      runAt = if (script.userRunAt != Script.RunAt.UNSET) script.userRunAt else metadata.`run-at`,
+      noFrames = metadata.noframes,
+      hasStorage = hasStorage
+    )
+    val lib = mutableListOf<String>()
+    GlobalScope.launch(Dispatchers.IO) {
+      metadata.require.forEach { runCatching { lib.add(downloadLib(it)) } }
+    }
+    val loadedScript = LoadedScript(
+      script = script,
+      metadata = metadata,
+      options = options,
+      code = code,
+      lib = lib
+    )
+    return loadedScript
   }
 }

@@ -19,12 +19,13 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.matrix.chromext.R
 import org.matrix.chromext.Resource
 import org.matrix.chromext.db.entity.Script
-import org.matrix.chromext.script.RuntimeScript
+import org.matrix.chromext.script.LoadedScript
 import org.matrix.chromext.script.ScriptDbManager
 import org.matrix.chromext.script.ScriptFileStorage
 import org.matrix.chromext.script.ScriptMetadata
@@ -42,8 +43,10 @@ class ScriptManagerActivity : Activity(),
   val tv_info by lazy { findViewById<TextView>(R.id.tv_info) }
   val lv_scripts by lazy { findViewById<ListView>(R.id.lv_scripts) }
 
-  var runtimeScripts: List<RuntimeScript> = emptyList()
+  var loadedScripts: List<LoadedScript> = emptyList()
   var installScripts: List<InstallScriptInfo> = emptyList()
+
+  private val scope = MainScope()
 
   override fun onCreate(savedInstanceState: Bundle?) {
     Resource.enrich(this)
@@ -144,9 +147,14 @@ class ScriptManagerActivity : Activity(),
     return WindowInsetsCompat.CONSUMED
   }
 
+  override fun onDestroy() {
+    scope.cancel()
+    super.onDestroy()
+  }
+
   private fun updateScriptInfo() {
-    GlobalScope.launch(Dispatchers.IO) {
-      runtimeScripts = ScriptDbManager.scripts
+    scope.launch(Dispatchers.IO) {
+      loadedScripts = ScriptDbManager.loadedScripts
       installScripts =
         ScriptDbManager.getAllScript()
           .map {
@@ -154,9 +162,9 @@ class ScriptManagerActivity : Activity(),
               it, ScriptParser.parseMetadata(it.meta), ScriptFileStorage.getScriptSize(it.id)
             )
           }
-      GlobalScope.launch(Dispatchers.Main) {
+      scope.launch(Dispatchers.Main) {
         tv_info.text = """
-          |runtime scripts ${runtimeScripts.size}
+          |loaded scripts ${loadedScripts.size}
           |install scripts ${installScripts.size}
         """.trimMargin()
         (lv_scripts.adapter as BaseAdapter).notifyDataSetChanged()

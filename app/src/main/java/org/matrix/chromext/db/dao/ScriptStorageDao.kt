@@ -7,6 +7,9 @@ import org.matrix.chromext.db.entity.ScriptStorage
 
 @Dao
 interface ScriptStorageDao {
+  @Query("SELECT * FROM ScriptStorage")
+  suspend fun getAll(): List<ScriptStorage>
+
   @Query("SELECT * FROM ScriptStorage WHERE id = :id")
   suspend fun getById(id: String): ScriptStorage?
 

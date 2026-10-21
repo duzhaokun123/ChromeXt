@@ -10,6 +10,12 @@ interface ScriptDao {
   @Query("SELECT * FROM Script")
   suspend fun getAll(): List<Script>
 
+  @Query("SELECT * FROM Script WHERE enabled = 1")
+  suspend fun getAllEnabled(): List<Script>
+
+  @Query("SELECT id FROM Script WHERE enabled = 1")
+  suspend fun getAllEnabledId(): List<String>
+
   @Query("SELECT * FROM Script WHERE id = :id")
   suspend fun getById(id: String): Script?
 

@@ -25,14 +25,23 @@ import org.matrix.chromext.devtools.getInspectPages
 import org.matrix.chromext.devtools.hitDevTools
 import org.matrix.chromext.hook.UserScriptHook
 import org.matrix.chromext.proxy.UserScriptProxy
+import org.matrix.chromext.script.GM
 import org.matrix.chromext.script.Local
 import org.matrix.chromext.script.ScriptDbManager
+import org.matrix.chromext.script.ScriptDbManager.cosmeticFilters
+import org.matrix.chromext.script.ScriptDbManager.cspRules
 import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.XMLHttpRequest
 import org.matrix.chromext.utils.findField
 import org.matrix.chromext.utils.findMethod
 import org.matrix.chromext.utils.hookAfter
 import org.matrix.chromext.utils.invokeMethod
+import org.matrix.chromext.utils.isDevToolsFrontEnd
+import org.matrix.chromext.utils.isUserScript
+import org.matrix.chromext.utils.matching
+import org.matrix.chromext.utils.parseOrigin
+import org.matrix.chromext.utils.resolveContentUrl
+import org.matrix.chromext.utils.shouldBypassSandbox
 
 object Chrome {
   private var mContext: WeakReference<Context>? = null
@@ -252,6 +261,81 @@ object Chrome {
         }
       }
     }
+  }
+
+  fun injectChromeXtScript(url: String, webView: Any? = null, frameId: String? = null) {
+    val codes = mutableListOf<String>()
+    val path = resolveContentUrl(url)
+    val webviewSettings = webView?.invokeMethod { name == "getSettings" }
+
+    codes.add(Local.initChromeXt)
+
+    // Whether ChromeXt is accessible in the global context
+    var trustedPage: Boolean
+    // Whether UserScripts are invoked
+    var runUserScript = false
+    var bypassSandbox = false
+
+    if (isUserScript(url, path)) {
+      codes.add(Local.promptInstallUserScript)
+      bypassSandbox = shouldBypassSandbox(url)
+    }
+
+    if (isDevToolsFrontEnd(url)) {
+      trustedPage = true
+      codes.add(Local.customizeDevTool)
+      webviewSettings?.invokeMethod(null) { name == "setUserAgentString" }
+    } else {
+      val origin = parseOrigin(url)
+      if (origin != null) {
+        if (cspRules.contains(origin)) {
+          runCatching {
+            val rule = JSONArray(cspRules.get(origin))
+            codes.add("Symbol.ChromeXt.cspRules.push(...${rule});${Local.cspRule}")
+          }
+        }
+        if (cosmeticFilters.contains(origin)) {
+          runCatching {
+            val filter = JSONArray(cosmeticFilters.get(origin))
+            codes.add("Symbol.ChromeXt.filters.push(...${filter});${Local.cosmeticFilter}")
+          }
+        }
+      }
+      trustedPage = false
+      runUserScript = true
+    }
+
+    if (trustedPage) {
+      codes.add("globalThis.ChromeXt = Symbol.ChromeXt;")
+    } else {
+      codes.add("Symbol.ChromeXt.lock(${Local.key}, '${Local.name}');")
+    }
+
+    codes.add("//# sourceURL=local://ChromeXt/init" + if (frameId == null) "" else "/" + frameId)
+    webviewSettings?.invokeMethod(true) { name == "setJavaScriptEnabled" }
+    val initScript = codes.joinToString("\n")
+
+    val asyncEvaluation = bypassSandbox || frameId != null
+    var framesGranted = false
+
+    if (!asyncEvaluation)
+      evaluateJavascript(
+        listOf(initScript), webView, frameId, bypassSandbox, bypassSandbox)
+    codes.clear()
+    if (asyncEvaluation) codes.add(initScript)
+    if (runUserScript) {
+      ScriptDbManager.loadedScripts
+        .filter { matching(it, url) && !(frameId != null && it.options.noFrames) }
+        .forEach {
+          if ("frames" in it.options.grant) framesGranted = true
+          GM.bootstrap(it, codes)
+        }
+      if (!asyncEvaluation) evaluateJavascript(codes, webView, frameId)
+    }
+    if (asyncEvaluation)
+      evaluateJavascript(codes, webView, frameId, bypassSandbox, bypassSandbox)
+
+    if (framesGranted && frameId == null) injectFrames(webView)
   }
 
   private fun evaluateJavascriptDevTools(codes: List<String>, tabId: String, bypassCSP: Boolean) {

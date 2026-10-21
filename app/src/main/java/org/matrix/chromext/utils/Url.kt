@@ -4,6 +4,7 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import kotlin.text.Regex
 import org.matrix.chromext.Chrome
+import org.matrix.chromext.script.LoadedScript
 import org.matrix.chromext.script.RuntimeScript
 
 const val ERUD_URL = "https://cdn.jsdelivr.net/npm/eruda"
@@ -59,6 +60,27 @@ fun matching(script: RuntimeScript, url: String): Boolean {
   script.match.forEach {
     if (urlMatch(it, url, false)) {
       // Log.d("${script.id} injected")
+      return true
+    }
+  }
+  return false
+}
+
+fun matching(script: LoadedScript, url: String): Boolean {
+  script.options.exclude.forEach {
+    if (urlMatch(it, url, true)) {
+      return false
+    }
+  }
+  script.options.match.forEach {
+    if (urlMatch(it, url, false)) {
+      // Log.d("${script.id} injected")
+      return true
+    }
+  }
+  // keep old behavior
+  script.options.include.forEach {
+    if (urlMatch(it, url, false)) {
       return true
     }
   }

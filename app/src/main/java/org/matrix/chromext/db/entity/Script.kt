@@ -11,7 +11,7 @@ data class Script(
   val id: String,
   val uuid: UUID,
   val meta: String,
-//  var enabled: Boolean = true,
+  var enabled: Boolean = true,
   var userRunAt: RunAt = RunAt.UNSET,
   var userMatch: String = "",
   var userInclude: String = "",
@@ -40,4 +40,13 @@ data class Script(
       return value
     }
   }
+
+  val userMatchList: List<String>
+    get() = userMatch.split("\n").filter { it.isNotBlank() }
+  val userIncludeList: List<String>
+    get() = userInclude.split("\n").filter { it.isNotBlank() }
+  val userExcludeList: List<String>
+    get() = userExclude.split("\n").filter { it.isNotBlank() }
+  val userConnectList: List<String>
+    get() = userConnect.split("\n").filter { it.isNotBlank() }
 }

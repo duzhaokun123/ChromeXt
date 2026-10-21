@@ -36,17 +36,13 @@ object GM {
   }
 
   fun bootstrap(
-    script: RuntimeScript,
+    script: LoadedScript,
     codes: MutableList<String> = mutableListOf<String>(),
   ): MutableList<String> {
     var code = script.code
     var grants = ""
 
-    if (!script.meta.startsWith("// ==UserScript==")) {
-      code = script.meta + code
-    }
-
-    script.grant.forEach {
+    script.options.grant.forEach {
       when (it) {
         "none" -> return@forEach
         "frames" -> return@forEach
@@ -70,7 +66,7 @@ object GM {
                       } else {
                         func
                       }
-              if (localScript.containsKey(name) && !script.grant.contains(name))
+              if (localScript.containsKey(name) && !script.options.grant.contains(name))
                   grants += localScript.get(name)
               grants += "${it}={sync: ${name}};\n"
             }
@@ -78,7 +74,42 @@ object GM {
     }
 
     grants += localScript.get("GM.bootstrap")!!
-    val GM_info = JSONObject(mapOf("scriptMetaStr" to script.meta))
+    // HACK! don't use metadata string
+    val metadataSb = StringBuilder()
+    val metadataList = script.metadata.raw.toMutableList()
+    metadataList.removeAll {
+      it.first in listOf("match", "include", "exclude", "grant", "require", "connect", "run-at", "noframes")
+    }
+    script.options.match.forEach {
+      metadataList.add("match" to it)
+    }
+    script.options.include.forEach {
+      metadataList.add("include" to it)
+    }
+    script.options.exclude.forEach {
+      metadataList.add("exclude" to it)
+    }
+    script.options.grant.forEach {
+      metadataList.add("grant" to it)
+    }
+    script.options.require.forEach {
+      metadataList.add("require" to it)
+    }
+    script.options.connect.forEach {
+      metadataList.add("connect" to it)
+    }
+    if (script.options.runAt != Script.RunAt.UNSET) {
+      metadataList.add("run-at" to script.options.runAt.value)
+    }
+    if (script.options.noFrames) {
+      metadataList.add("noframes" to "")
+    }
+    metadataSb.appendLine("// ==UserScript==")
+    metadataList.forEach {
+      metadataSb.appendLine("// @${it.first} ${it.second ?: ""}")
+    }
+    metadataSb.appendLine("// ==/UserScript==")
+    val GM_info = JSONObject(mapOf("scriptMetaStr" to metadataSb.toString()))
     GM_info.put("script", JSONObject().put("id", script.id))
     GM_info.put("uuid", script.uuid)
     if (script.storage != null) GM_info.put("storage", script.storage)

@@ -38,6 +38,7 @@ import org.matrix.chromext.utils.isUserScript
 import org.matrix.chromext.utils.matching
 import org.matrix.chromext.utils.parseOrigin
 import androidx.core.net.toUri
+import org.matrix.chromext.script.storage
 
 object Listener {
 
@@ -248,7 +249,7 @@ object Listener {
       "scriptStorage" -> {
         val detail = JSONObject(payload)
         val id = detail.getString("id")
-        val script = ScriptDbManager.scripts.find { it.id == id }
+        val script = ScriptDbManager.loadedScripts.find { it.id == id }
         if (script?.storage == null) return callback
         if (detail.optBoolean("broadcast")) {
           detail.remove("broadcast")

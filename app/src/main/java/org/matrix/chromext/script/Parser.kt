@@ -91,7 +91,7 @@ fun parseScript(input: String, uuid: String, storage: String? = null): RuntimeSc
   }
 }
 
-private fun downloadLib(libUrl: String): String {
+public fun downloadLib(libUrl: String): String {
   if (libUrl.startsWith("data:")) {
     val chunks = libUrl.split(",").toMutableList()
     val type = chunks.removeFirst()
