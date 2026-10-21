@@ -402,7 +402,7 @@ object Listener {
           val item = data.getJSONObject(i)
           commands.add(UserScriptMenuCommand.MenuCommandItem(
             index = item.getInt("index"),
-            scriptName = item.getString("scriptName"),
+            scriptId = item.getString("scriptId"),
             title = item.getString("title"),
             enabled = item.getBoolean("enabled")
           ))

@@ -8,7 +8,7 @@ object UserScriptMenuCommand {
   data class MenuCommandItem(
     val index: Int,
     val title: String,
-    val scriptName: String,
+    val scriptId: String,
     var enabled: Boolean = true,
     val id: Int = indexToId(index)
   )

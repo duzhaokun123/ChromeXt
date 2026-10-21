@@ -23,6 +23,7 @@ import org.matrix.chromext.devtools.getInspectPages
 import org.matrix.chromext.proxy.PageMenuProxy
 import org.matrix.chromext.proxy.UserScriptProxy
 import org.matrix.chromext.script.Local
+import org.matrix.chromext.script.ScriptDbManager
 import org.matrix.chromext.utils.*
 import java.lang.reflect.Constructor
 import java.util.function.Supplier
@@ -322,8 +323,8 @@ object PageMenuHook : BaseHook() {
       }
       val usedTemplateIds = mutableSetOf<Int>()
       commands
-        .groupBy { item -> item.scriptName }
-        .forEach { (name, items) ->
+        .groupBy { item -> item.scriptId }
+        .forEach { (id, items) ->
           val scriptCommandItems = mutableListOf<Any>()
           items.forEach { item ->
             val titleId =
@@ -344,6 +345,8 @@ object PageMenuHook : BaseHook() {
             )!!
             scriptCommandItems.add(listItem)
           }
+          val name = ScriptDbManager.loadedScripts.find { it.id == id }?.metadata?.localeName
+            ?: id.substringAfterLast(":")
           val titleId = ChromeXtModuleContext.addStringRes(name).also { usedTemplateIds.add(it) }
           val model = PageMenuProxy.method_AppMenuItemUtils_buildModelForMenuItemWithSubmenu.invoke(
             null,

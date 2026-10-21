@@ -4,7 +4,7 @@
     .map((cmd, index) => {
       return {
         index: index,
-        scriptName: cmd.id.split(':').at(-1),
+        scriptId: cmd.id,
         title: cmd.title,
         enabled: cmd.enabled
       }
