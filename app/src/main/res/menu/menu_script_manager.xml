@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
+        android:id="@+id/import_old_db"
+        android:title="import scripts from old version"
+        android:showAsAction="never" />
+    <item
         android:id="@+id/reflash"
         android:title="reflash"
         android:showAsAction="ifRoom" />

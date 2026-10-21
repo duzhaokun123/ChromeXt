@@ -35,6 +35,7 @@ import org.matrix.chromext.db.entity.Script
 import org.matrix.chromext.script.LoadedScript
 import org.matrix.chromext.script.ScriptDbManager
 import org.matrix.chromext.script.ScriptFileStorage
+import org.matrix.chromext.script.UserscriptMigration
 import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.ScriptMetadata
 import org.matrix.chromext.utils.ScriptParser
@@ -57,6 +58,9 @@ class ScriptManagerActivity : Activity(),
   var scriptIcon: Map<String, Drawable> = emptyMap()
 
   private val scope = MainScope()
+  private var importing = false
+  private var importItem: MenuItem? = null
+  private var restartRequired = false
 
   override fun onCreate(savedInstanceState: Bundle?) {
     Resource.enrich(this)
@@ -137,11 +141,18 @@ class ScriptManagerActivity : Activity(),
 
   override fun onCreateOptionsMenu(menu: Menu?): Boolean {
     menuInflater.inflate(R.menu.menu_script_manager, menu)
+    importItem = menu?.findItem(R.id.import_old_db)
+    importItem?.isVisible = UserscriptMigration.hasOldDatabase()
     return super.onCreateOptionsMenu(menu)
   }
 
   override fun onMenuItemSelected(featureId: Int, item: MenuItem): Boolean {
     when (item.itemId) {
+      R.id.import_old_db -> {
+        importOldDatabase()
+        return true
+      }
+
       R.id.reflash -> {
         updateScriptInfo()
         return true
@@ -176,6 +187,55 @@ class ScriptManagerActivity : Activity(),
     super.onDestroy()
   }
 
+  private fun importOldDatabase() {
+    if (importing) return
+    if (!UserscriptMigration.hasOldDatabase()) {
+      Log.toast(this, "no old version scripts found")
+      return
+    }
+    AlertDialog.Builder(this)
+      .setTitle("Import scripts from old version?")
+      .setMessage("Chrome must be restarted afterwards. The old database is deleted on success.")
+      .setNegativeButton(android.R.string.cancel, null)
+      .setPositiveButton(android.R.string.ok) { _, _ -> runMigration() }
+      .show()
+  }
+
+  private fun runMigration() {
+    importing = true
+    importItem?.isEnabled = false
+    scope.launch(Dispatchers.IO) {
+      val result = runCatching { UserscriptMigration.migrate(ScriptDbManager.db) }
+      withContext(Dispatchers.Main) {
+        importing = false
+        importItem?.isEnabled = true
+        result
+          .onSuccess { r ->
+            if (r.failed == 0) {
+              restartRequired = true
+              Log.toast(
+                this@ScriptManagerActivity,
+                "Imported ${r.imported}, skipped ${r.skipped}. Restart Chrome to apply")
+              // old database is gone, hide the menu item
+              invalidateOptionsMenu()
+            } else {
+              if (r.imported > 0) {
+                restartRequired = true
+              }
+              Log.toast(
+                this@ScriptManagerActivity,
+                "Imported ${r.imported}, ${r.failed} scripts failed, old database kept")
+            }
+          }
+          .onFailure { e ->
+            Log.ex(e, "import old database failed")
+            Log.toast(this@ScriptManagerActivity, "import failed: ${e.message}")
+          }
+        updateScriptInfo()
+      }
+    }
+  }
+
   private fun updateScriptInfo() {
     scope.launch(Dispatchers.IO) {
       loadedScripts = ScriptDbManager.loadedScripts
@@ -208,10 +268,13 @@ class ScriptManagerActivity : Activity(),
         }
       }
       launch(Dispatchers.Main) {
-        tv_info.text = """
-          |loaded scripts ${loadedScripts.size}
-          |install scripts ${installScripts.size}
-        """.trimMargin()
+        tv_info.text =
+          """
+            |loaded scripts ${loadedScripts.size}
+            |install scripts ${installScripts.size}
+          """
+            .trimMargin() +
+            if (restartRequired) "\nrestart Chrome to load imported scripts" else ""
         (lv_scripts.adapter as BaseAdapter).notifyDataSetChanged()
       }
     }
