@@ -21,8 +21,8 @@ import org.matrix.chromext.R
 import org.matrix.chromext.Resource
 import org.matrix.chromext.db.entity.Script
 import org.matrix.chromext.script.ScriptDbManager
-import org.matrix.chromext.script.ScriptMetadata
 import org.matrix.chromext.utils.Log
+import org.matrix.chromext.utils.ScriptMetadata
 import org.matrix.chromext.utils.ScriptParser
 
 class ScriptConfigActivity : Activity(), OnApplyWindowInsetsListener {

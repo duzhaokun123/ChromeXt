@@ -28,7 +28,7 @@ import org.matrix.chromext.db.entity.Script
 import org.matrix.chromext.script.LoadedScript
 import org.matrix.chromext.script.ScriptDbManager
 import org.matrix.chromext.script.ScriptFileStorage
-import org.matrix.chromext.script.ScriptMetadata
+import org.matrix.chromext.utils.ScriptMetadata
 import org.matrix.chromext.utils.ScriptParser
 
 data class InstallScriptInfo(

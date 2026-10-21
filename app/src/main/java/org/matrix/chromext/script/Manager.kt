@@ -12,6 +12,7 @@ import org.matrix.chromext.db.ChromeXtDatabase
 import org.matrix.chromext.db.entity.Script
 import org.matrix.chromext.db.entity.ScriptStorage
 import org.matrix.chromext.utils.Log
+import org.matrix.chromext.utils.ScriptMetadata
 import org.matrix.chromext.utils.ScriptParser
 import java.util.UUID
 
