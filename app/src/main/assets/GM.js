@@ -1298,8 +1298,8 @@ GM.bootstrap = () => {
         }
     }
 
-    GM_info.scriptHandler = "ChromeXt";
-    GM_info.version = "3.8.3";
+    GM_info.scriptHandler = "ChromeYt";
+    GM_info.version = "4.0.0";
     Object.freeze(GM_info);
     ChromeXt.scripts.push(GM_info);
   }
