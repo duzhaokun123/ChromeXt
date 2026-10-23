@@ -19,6 +19,7 @@ import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.findField
 import org.matrix.chromext.utils.findMethod
 import org.matrix.chromext.utils.hookBefore
+import org.matrix.chromext.utils.startActivitySafe
 
 object PreferenceProxy {
   private var clickHooked: Boolean = false
@@ -199,15 +200,14 @@ object PreferenceProxy {
                   ScriptFileStorage.deleteAll()
                   Log.toast(ctx, "ChromeXt data are reset")
                 },
-            "script_manager" to
-                fun(_: Any) {
-                  runCatching {
-                    ctx.startActivity(Intent(ctx, ScriptManagerActivity::class.java))
-                  }.onFailure { e ->
-                    Log.e(e)
+          "script_manager" to
+              fun(_: Any) {
+                ctx.startActivitySafe(Intent(ctx, ScriptManagerActivity::class.java))
+                  ?.let { e ->
+                    Log.ex(e)
                     Log.toast(ctx, "start ScriptManagerActivity failed:\n${e.message}")
                   }
-                }
+              }
         )
 
     if (mClickListener.type == OnClickListener::class.java) {

@@ -39,6 +39,7 @@ import org.matrix.chromext.utils.matching
 import org.matrix.chromext.utils.parseOrigin
 import androidx.core.net.toUri
 import org.matrix.chromext.script.storage
+import org.matrix.chromext.utils.startActivitySafe
 
 object Listener {
 
@@ -190,12 +191,10 @@ object Listener {
       "installScript" -> {
         val url = payload
         Log.i("Install script from $url")
-        runCatching {
-          val context = Chrome.getContext()
-          context.startActivity(Intent(context, ScriptInstallActivity::class.java).apply {
-            data = url.toUri()
-          })
-        }.onFailure { e ->
+        val context = Chrome.getContext()
+        context.startActivitySafe(Intent(context, ScriptInstallActivity::class.java).apply {
+          data = url.toUri()
+        })?.let { e ->
           Log.ex(e)
         }
       }

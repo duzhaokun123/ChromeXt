@@ -1,5 +1,8 @@
 package org.matrix.chromext.utils
 
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
 import android.content.res.Resources
 import android.net.Uri
 import androidx.core.net.toFile
@@ -74,4 +77,14 @@ suspend fun loadExternalResource(url: String): ByteArray {
       throw RuntimeException("loadExternalResource unsupported scheme ${uri.scheme} for $uri")
     }
   }
+}
+
+fun Context.startActivitySafe(intent: Intent): Throwable? {
+  return runCatching {
+    if (this !is Activity) {
+      Log.w("start from outside of an Activity ")
+      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    this.startActivity(intent)
+  }.exceptionOrNull()
 }
