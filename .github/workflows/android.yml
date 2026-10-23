@@ -47,7 +47,6 @@ jobs:
           archive: false
 
       - name: Build release APK
-        if: env.IS_RELEASE_BUILD == 'true'
         run: ./gradlew app:assembleRelease
 
       - name: Sign release APK
