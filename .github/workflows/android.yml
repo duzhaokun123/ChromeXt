@@ -37,12 +37,12 @@ jobs:
         run: ./gradlew app:assembleDebug
 
       - name: Rename debug APK
-        run: mv app/build/outputs/apk/debug/app-debug.apk app/build/ChromeXt_debug.apk
+        run: mv app/build/outputs/apk/debug/app-debug.apk app/build/ChromeYt_debug.apk
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:
-          path: app/build/ChromeXt_debug.apk
+          path: app/build/ChromeYt_debug.apk
           if-no-files-found: error
           archive: false
 
@@ -63,12 +63,12 @@ jobs:
 
       - name: Rename signed APK
         if: env.IS_RELEASE_BUILD == 'true'
-        run: mv "${{ steps.sign_app.outputs.signedReleaseFile }}" app/build/ChromeXt_signed.apk
+        run: mv "${{ steps.sign_app.outputs.signedReleaseFile }}" app/build/ChromeYt_signed.apk
 
       - name: Upload signed APK
         if: env.IS_RELEASE_BUILD == 'true'
         uses: actions/upload-artifact@v7
         with:
-          path: app/build/ChromeXt_signed.apk
+          path: app/build/ChromeYt_signed.apk
           if-no-files-found: error
           archive: false

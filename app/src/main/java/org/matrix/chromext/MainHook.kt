@@ -27,7 +27,7 @@ class MainHook : IXposedHookLoadPackage, IXposedHookZygoteInit {
 
   override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
     Log.d(lpparam.processName + " started")
-    if (lpparam.packageName == "org.matrix.chromext") return
+    if (lpparam.packageName == BuildConfig.APPLICATION_ID) return
     if (supportedPackages.contains(lpparam.packageName)) {
       hostClassloader = lpparam.classLoader
       lpparam.classLoader

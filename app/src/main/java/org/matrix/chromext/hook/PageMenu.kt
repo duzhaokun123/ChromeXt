@@ -91,14 +91,14 @@ object PageMenuHook : BaseHook() {
         return false
       }
 
-      when (ctx.resources.getResourceName(id)) {
-        "org.matrix.chromext:id/install_script_id" -> {
+      when (id) {
+        R.id.install_script_id -> {
           val sandBoxed = shouldBypassSandbox(getUrl())
           Chrome.evaluateJavascript(listOf("Symbol.${Local.name}.unlock(${Local.key}).dispatch('installScript', document.URL);"), null, null, sandBoxed)
         }
-        "org.matrix.chromext:id/eruda_console_id" ->
+        R.id.eruda_console_id ->
             UserScriptProxy.evaluateJavascript(Local.openEruda)
-        "org.matrix.chromext:id/devtools" -> {
+        R.id.devtools -> {
           GlobalScope.launch(Dispatchers.IO) {
             val pages = getInspectPages()
             if (pages == null) {

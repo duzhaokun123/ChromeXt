@@ -22,4 +22,4 @@ dependencyResolutionManagement {
 
 include(":app")
 
-rootProject.name = "ChromeXt"
+rootProject.name = "ChromeYt"

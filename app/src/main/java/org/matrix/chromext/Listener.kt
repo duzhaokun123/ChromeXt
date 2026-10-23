@@ -218,7 +218,7 @@ object Listener {
                 .setContentTitle(title)
                 .setContentText(text)
                 .setSmallIcon(
-                    Icon.createWithResource("org.matrix.chromext", R.drawable.ic_extension))
+                    Icon.createWithResource(BuildConfig.APPLICATION_ID, R.drawable.ic_extension))
                 .setTimeoutAfter(timeout)
                 .setCategory(Notification.CATEGORY_MESSAGE)
                 .setAutoCancel(true)

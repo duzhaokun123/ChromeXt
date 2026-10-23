@@ -9,7 +9,7 @@ android {
   namespace = "org.matrix.chromext"
 
   defaultConfig {
-    applicationId = "org.matrix.chromext"
+    applicationId = "io.github.duzhaokun123.chromeyt"
     minSdk = 23
     targetSdk = 37
     versionCode = 16
