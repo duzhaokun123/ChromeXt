@@ -497,7 +497,10 @@ function GM_xmlhttpRequest(details) {
       return;
     }
   }
-  const uuid = Math.random();
+  const uuid =
+    typeof crypto == "object" && typeof crypto.randomUUID == "function"
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2) + Date.now().toString(36);
   const fallback_method = typeof details.data == "undefined" ? "GET" : "POST";
   details.method = details.method
     ? details.method.toUpperCase()

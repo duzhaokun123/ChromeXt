@@ -43,7 +43,7 @@ import org.matrix.chromext.utils.startActivitySafe
 
 object Listener {
 
-  val xmlhttpRequests = mutableMapOf<Double, XMLHttpRequest>()
+  val xmlhttpRequests = mutableMapOf<String, XMLHttpRequest>()
   val allowedActions =
       mapOf(
           "devtools" to listOf("websocket"),
@@ -272,9 +272,9 @@ object Listener {
       }
       "xmlhttpRequest" -> {
         val detail = JSONObject(payload)
-        val uuid = detail.getDouble("uuid")
+        val uuid = detail.getString("uuid")
         if (detail.optBoolean("abort")) {
-          xmlhttpRequests.get(uuid)?.abort()
+          xmlhttpRequests[uuid]?.abort()
         } else {
           val request =
               XMLHttpRequest(
@@ -283,7 +283,7 @@ object Listener {
                   uuid,
                   currentTab,
                   frameId)
-          xmlhttpRequests.put(uuid, request)
+          xmlhttpRequests[uuid] = request
           Chrome.IO.submit { request.send() }
         }
       }

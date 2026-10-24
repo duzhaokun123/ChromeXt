@@ -16,7 +16,7 @@ import org.matrix.chromext.script.Local
 class XMLHttpRequest(
     id: String,
     request: JSONObject,
-    uuid: Double,
+    uuid: String,
     currentTab: Any?,
     frameId: String?
 ) {
@@ -153,7 +153,7 @@ class XMLHttpRequest(
       Chrome.evaluateJavascript(listOf(code), currentTab, frameId)
     }
     if (disconnect) {
-      Listener.xmlhttpRequests.remove(response.getDouble("uuid"))
+      Listener.xmlhttpRequests.remove(response.getString("uuid"))
       connection?.disconnect()
     }
   }
