@@ -7,6 +7,7 @@ import java.io.FileReader
 import kotlin.random.Random
 import org.json.JSONArray
 import org.json.JSONObject
+import org.matrix.chromext.BuildConfig
 import org.matrix.chromext.Chrome
 import org.matrix.chromext.Resource
 import org.matrix.chromext.db.entity.Script
@@ -112,6 +113,8 @@ object GM {
     val GM_info = JSONObject(mapOf("scriptMetaStr" to metadataSb.toString()))
     GM_info.put("script", JSONObject().put("id", script.id))
     GM_info.put("uuid", script.uuid)
+    GM_info.put("scriptHandler", BuildConfig.SCRIPT_HANDLER_NAME)
+    GM_info.put("version", BuildConfig.VERSION_NAME)
     if (script.storage != null) GM_info.put("storage", script.storage)
     code = "\ndelete window.__loading__;\n${code};"
     code = localScript.get("globalThis")!! + script.lib.joinToString("\n") + code

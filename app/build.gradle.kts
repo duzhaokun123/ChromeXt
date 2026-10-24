@@ -16,6 +16,7 @@ android {
     versionName = "4.0.0"
 
     buildConfigField("long", "BUILD_TIME", "${System.currentTimeMillis()}L")
+    buildConfigField("String", "SCRIPT_HANDLER_NAME", "\"ChromeYt\"")
   }
 
   buildFeatures { buildConfig = true }
