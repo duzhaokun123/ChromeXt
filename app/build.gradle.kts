@@ -2,6 +2,7 @@ plugins {
   id("com.android.application")
   id("com.ncorti.ktfmt.gradle")
   id("com.google.devtools.ksp")
+  id("androidx.room3")
 }
 
 android {
@@ -12,8 +13,8 @@ android {
     applicationId = "io.github.duzhaokun123.chromeyt"
     minSdk = 23
     targetSdk = 37
-    versionCode = 17
-    versionName = "4.0.0"
+    versionCode = 18
+    versionName = "4.0.1"
 
     buildConfigField("long", "BUILD_TIME", "${System.currentTimeMillis()}L")
     buildConfigField("String", "SCRIPT_HANDLER_NAME", "\"ChromeYt\"")
@@ -64,4 +65,8 @@ dependencies {
   implementation("io.ktor:ktor-client-core:3.6.0")
   implementation("io.ktor:ktor-client-android:3.6.0")
   implementation("androidx.browser:browser:1.10.0")
+}
+
+room3 {
+  schemaDirectory("$projectDir/schemas")
 }
